@@ -257,7 +257,56 @@ async function handleRoute(route, body, env) {
             return pfAdmin('SetTitleData', { Key: 'BroadcastMail', Value: JSON.stringify(list) }, env);
         }
 
-        // ── Announcements ──
+        // ── Segments ──
+        case 'get-segments':
+            return pfAdmin('GetAllSegments', {}, env);
+
+        // ── Search players by display name using a segment ──
+        // Paginates through GetPlayersInSegment and filters by display name.
+        case 'search-players': {
+            const query = (body.query || '').toLowerCase().trim();
+            const segmentId = body.segmentId || env.PLAYFAB_ALL_PLAYERS_SEGMENT_ID;
+
+            if (!segmentId) return { code: 400, errorMessage: 'No segment ID configured. Set PLAYFAB_ALL_PLAYERS_SEGMENT_ID in env variables.' };
+            if (!query) return { code: 400, errorMessage: 'No search query provided.' };
+
+            const matches = [];
+            let continuationToken = null;
+            let pages = 0;
+            const maxPages = 10; // safety limit — each page is up to 10k players
+
+            do {
+                const req = { SegmentId: segmentId, MaxBatchSize: 10000 };
+                if (continuationToken) req.ContinuationToken = continuationToken;
+
+                const res = await pfAdmin('GetPlayersInSegment', req, env);
+
+                if (res.code !== 200) {
+                    return { code: res.code, errorMessage: res.errorMessage || 'Segment query failed' };
+                }
+
+                const players = res.data?.PlayerProfiles || [];
+
+                for (const p of players) {
+                    const name = (p.DisplayName || '').toLowerCase();
+                    if (name.includes(query)) {
+                        matches.push({
+                            playFabId: p.PlayerId,
+                            displayName: p.DisplayName || '(no name)',
+                            lastLogin: p.LastLogin,
+                        });
+                    }
+                    // Stop early if we have enough results
+                    if (matches.length >= 20) break;
+                }
+
+                continuationToken = res.data?.ContinuationToken || null;
+                pages++;
+
+            } while (continuationToken && matches.length < 20 && pages < maxPages);
+
+            return { code: 200, data: matches };
+        }
         case 'add-announcement':
             return pfAdmin('AddNews', {
                 Title: body.title || '(No title)',

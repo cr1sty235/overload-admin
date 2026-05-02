@@ -5,7 +5,7 @@ var allInventory = [];
 var inventoryFilter = 'all';
 var inventorySearch = '';
 
-// ── Search ─────────────────────────────────────────────────────────────────
+// ── Search by ID ───────────────────────────────────────────────────────────
 
 function searchPlayer() {
     var id = document.getElementById('player-search').value.trim();
@@ -18,55 +18,69 @@ function searchPlayer() {
         var profileRes = results[0];
         var accountRes = results[1];
 
-        // Debug — remove once working
-        console.log('lookup-player response:', JSON.stringify(profileRes));
-
         var profile = profileRes.data && profileRes.data.PlayerProfile;
-        if (!profile) {
-            toast('Player not found — check console for details', 'err');
-            return;
-        }
+        if (!profile) { toast('Player not found', 'err'); return; }
 
         var resolvedId = profile.PlayerId || id;
-
-        currentPlayer = {
-            playFabId: resolvedId,
-            displayName: profile.DisplayName || 'Unknown',
-            lastLogin: profile.LastLogin,
-            created: profile.Created,
-            account: accountRes.data && accountRes.data.UserInfo,
-        };
-
-        recentPlayers = [currentPlayer]
-            .concat(recentPlayers.filter(function (p) { return p.playFabId !== resolvedId; }))
-            .slice(0, 10);
-
-        renderRecentList();
-        renderPlayerDetail();
+        setCurrentPlayer(resolvedId, profile.DisplayName || 'Unknown', profile.LastLogin, profile.Created, accountRes.data && accountRes.data.UserInfo);
         toast('Loaded ' + currentPlayer.displayName);
 
-    }).catch(function (e) { toast(e.message, 'err'); console.error(e); });
+    }).catch(function (e) { toast(e.message, 'err'); });
 }
 
-function loadRecentPlayer(pfid) {
+// ── Search by display name (via segment) ───────────────────────────────────
+
+function searchByName() {
+    var query = document.getElementById('name-search').value.trim();
+    if (!query) return;
+
+    var el = document.getElementById('player-list');
+    el.innerHTML = '<div class="empty">Searching…</div>';
+
+    api('search-players', { query: query })
+        .then(function (d) {
+            if (d.code !== 200) {
+                el.innerHTML = '<div class="empty">' + escapeHtml(d.errorMessage || 'Search failed') + '</div>';
+                return;
+            }
+
+            var results = d.data || [];
+            if (!results.length) {
+                el.innerHTML = '<div class="empty">No players found matching "' + escapeHtml(query) + '"</div>';
+                return;
+            }
+
+            renderPlayerList(results);
+        })
+        .catch(function (e) {
+            el.innerHTML = '<div class="empty">Search failed: ' + escapeHtml(e.message) + '</div>';
+        });
+}
+
+// ── Set and load a player ──────────────────────────────────────────────────
+
+function setCurrentPlayer(pfid, displayName, lastLogin, created, account) {
+    currentPlayer = { playFabId: pfid, displayName: displayName, lastLogin: lastLogin, created: created, account: account };
+    recentPlayers = [currentPlayer].concat(recentPlayers.filter(function (p) { return p.playFabId !== pfid; })).slice(0, 10);
+    renderPlayerList(recentPlayers);
+    renderPlayerDetail();
+}
+
+function loadPlayer(pfid) {
     document.getElementById('player-search').value = pfid;
     searchPlayer();
 }
 
-// ── Recent list ────────────────────────────────────────────────────────────
+// ── Render player list ─────────────────────────────────────────────────────
 
-function renderRecentList() {
+function renderPlayerList(players) {
     var el = document.getElementById('player-list');
-
-    if (!recentPlayers.length) {
-        el.innerHTML = '<div class="empty">No recent players</div>';
-        return;
-    }
-
-    el.innerHTML = recentPlayers.map(function (p) {
+    if (!players || !players.length) { el.innerHTML = '<div class="empty">No players</div>'; return; }
+    el.innerHTML = players.map(function (p) {
         var active = currentPlayer && currentPlayer.playFabId === p.playFabId ? ' active' : '';
-        return '<div class="list-item' + active + '" onclick="loadRecentPlayer(\'' + p.playFabId + '\')">' +
-            '<div class="list-item-icon">' + p.displayName[0].toUpperCase() + '</div>' +
+        var initial = (p.displayName || '?')[0].toUpperCase();
+        return '<div class="list-item' + active + '" onclick="loadPlayer(\'' + p.playFabId + '\')">' +
+            '<div class="list-item-icon">' + initial + '</div>' +
             '<div>' +
             '<div class="list-item-name">' + escapeHtml(p.displayName) + '</div>' +
             '<div class="list-item-sub">' + p.playFabId + '</div>' +
@@ -74,6 +88,13 @@ function renderRecentList() {
             '</div>';
     }).join('');
 }
+
+function renderRecentList() {
+    renderPlayerList(recentPlayers.length ? recentPlayers : null);
+    if (!recentPlayers.length) document.getElementById('player-list').innerHTML = '<div class="empty">No recent players</div>';
+}
+
+
 
 // ── Player detail ──────────────────────────────────────────────────────────
 

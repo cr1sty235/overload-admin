@@ -41,12 +41,16 @@
             <div class="pane-layout">
                 <div class="left-pane">
                     <div class="search-bar">
-                        <input id="player-search" placeholder="Display name or PlayFab ID…" onkeydown="if(event.key==='Enter') searchPlayer()">
+                        <input id="player-search" placeholder="Master Player ID…" onkeydown="if(event.key==='Enter') searchPlayer()">
                         <button class="btn-primary btn-sm" onclick="searchPlayer()">Go</button>
                     </div>
-                    <div class="section-label">RECENT</div>
+                    <div class="search-bar" style="border-top:none;padding-top:0">
+                        <input id="name-search" placeholder="Search by display name…" onkeydown="if(event.key==='Enter') searchByName()">
+                        <button class="btn-ghost btn-sm" onclick="searchByName()">🔍</button>
+                    </div>
+                    <div class="section-label">RESULTS</div>
                     <div class="list" id="player-list">
-                        <div class="empty">No recent players</div>
+                        <div class="empty">Search for a player above</div>
                     </div>
                 </div>
                 <div class="right-pane">
