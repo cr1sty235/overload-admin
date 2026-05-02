@@ -44,38 +44,37 @@ async function handleRoute(route, body, env) {
         // ── Players ──
         case 'lookup-player': {
             const query = body.playFabId;
-
             const profileConstraints = {
                 ShowDisplayName: true, ShowLocations: true,
                 ShowLastLogin: true, ShowCreated: true,
             };
 
-            // Only call GetPlayerProfile if the input looks like a hex ID
             const isHexId = /^[0-9A-Fa-f]{12,20}$/.test(query);
 
+            // 1. If it looks like a hex ID try GetPlayerProfile directly
             if (isHexId) {
                 const result = await pfAdmin('GetPlayerProfile', {
-                    PlayFabId: query,
-                    ProfileConstraints: profileConstraints,
+                    PlayFabId: query, ProfileConstraints: profileConstraints,
                 }, env);
                 if (result.code === 200 && result.data?.PlayerProfile) return result;
             }
 
-            // Try display name
-            const byDisplayName = await pfAdmin('LookupUserAccountInfo', {
+            // 2. Search by TitleDisplayName or Username via GetUserAccountInfo
+            //    (correct Admin API endpoint — LookupUserAccountInfo does not exist)
+            const byName = await pfAdmin('GetUserAccountInfo', {
                 TitleDisplayName: query,
             }, env).catch(() => null);
 
-            if (byDisplayName?.code === 200 && byDisplayName?.data?.UserInfo?.PlayFabId) {
+            if (byName?.code === 200 && byName?.data?.UserInfo?.PlayFabId) {
                 const result = await pfAdmin('GetPlayerProfile', {
-                    PlayFabId: byDisplayName.data.UserInfo.PlayFabId,
+                    PlayFabId: byName.data.UserInfo.PlayFabId,
                     ProfileConstraints: profileConstraints,
                 }, env);
                 if (result.code === 200 && result.data?.PlayerProfile) return result;
             }
 
-            // Try username
-            const byUsername = await pfAdmin('LookupUserAccountInfo', {
+            // 3. Try as Username
+            const byUsername = await pfAdmin('GetUserAccountInfo', {
                 Username: query,
             }, env).catch(() => null);
 
@@ -92,18 +91,11 @@ async function handleRoute(route, body, env) {
 
         case 'get-account': {
             const query = body.playFabId;
-
-            // Try directly first (works if it's a master player ID)
             let result = await pfAdmin('GetUserAccountInfo', { PlayFabId: query }, env);
             if (result.code === 200) return result;
-
-            // Try display name → master ID → account info
-            const lookup = await pfAdmin('LookupUserAccountInfo', { TitleDisplayName: query }, env).catch(() => null);
-            if (lookup?.code === 200 && lookup?.data?.UserInfo?.PlayFabId) {
-                return pfAdmin('GetUserAccountInfo', { PlayFabId: lookup.data.UserInfo.PlayFabId }, env);
-            }
-
-            return result;
+            result = await pfAdmin('GetUserAccountInfo', { TitleDisplayName: query }, env).catch(() => null);
+            if (result?.code === 200) return result;
+            return { code: 404, data: null };
         }
 
         case 'get-inventory':
@@ -257,55 +249,23 @@ async function handleRoute(route, body, env) {
             return pfAdmin('SetTitleData', { Key: 'BroadcastMail', Value: JSON.stringify(list) }, env);
         }
 
-        // ── Segments ──
-        case 'get-segments':
-            return pfAdmin('GetAllSegments', {}, env);
-
-        // ── Search players by display name using a segment ──
-        // Paginates through GetPlayersInSegment and filters by display name.
+        // ── Search players by display name ──
+        // GetPlayersInSegment was retired March 31 2026.
+        // GetUserAccountInfo with TitleDisplayName is the correct replacement
+        // for exact display name lookups (PlayFab enforces unique display names per title).
         case 'search-players': {
-            const query = (body.query || '').toLowerCase().trim();
-            const segmentId = body.segmentId || env.PLAYFAB_ALL_PLAYERS_SEGMENT_ID;
-
-            if (!segmentId) return { code: 400, errorMessage: 'No segment ID configured. Set PLAYFAB_ALL_PLAYERS_SEGMENT_ID in env variables.' };
+            const query = (body.query || '').trim();
             if (!query) return { code: 400, errorMessage: 'No search query provided.' };
 
-            const matches = [];
-            let continuationToken = null;
-            let pages = 0;
-            const maxPages = 10; // safety limit — each page is up to 10k players
+            const result = await pfAdmin('GetUserAccountInfo', { TitleDisplayName: query }, env).catch(() => null);
 
-            do {
-                const req = { SegmentId: segmentId, MaxBatchSize: 10000 };
-                if (continuationToken) req.ContinuationToken = continuationToken;
+            if (result?.code === 200 && result?.data?.UserInfo?.PlayFabId) {
+                const pfid = result.data.UserInfo.PlayFabId;
+                const name = result.data.UserInfo.TitleInfo?.DisplayName || query;
+                return { code: 200, data: [{ playFabId: pfid, displayName: name }] };
+            }
 
-                const res = await pfAdmin('GetPlayersInSegment', req, env);
-
-                if (res.code !== 200) {
-                    return { code: res.code, errorMessage: res.errorMessage || 'Segment query failed' };
-                }
-
-                const players = res.data?.PlayerProfiles || [];
-
-                for (const p of players) {
-                    const name = (p.DisplayName || '').toLowerCase();
-                    if (name.includes(query)) {
-                        matches.push({
-                            playFabId: p.PlayerId,
-                            displayName: p.DisplayName || '(no name)',
-                            lastLogin: p.LastLogin,
-                        });
-                    }
-                    // Stop early if we have enough results
-                    if (matches.length >= 20) break;
-                }
-
-                continuationToken = res.data?.ContinuationToken || null;
-                pages++;
-
-            } while (continuationToken && matches.length < 20 && pages < maxPages);
-
-            return { code: 200, data: matches };
+            return { code: 200, data: [] };
         }
         case 'add-announcement':
             return pfAdmin('AddNews', {
