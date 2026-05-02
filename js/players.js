@@ -39,6 +39,8 @@ function searchByName() {
 
     api('search-players', { query: query })
         .then(function (d) {
+            console.log('search-players response:', JSON.stringify(d));
+
             if (d.code !== 200) {
                 el.innerHTML = '<div class="empty">' + escapeHtml(d.errorMessage || 'Search failed') + '</div>';
                 return;

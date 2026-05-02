@@ -250,22 +250,14 @@ async function handleRoute(route, body, env) {
         }
 
         // ── Search players by display name ──
-        // GetPlayersInSegment was retired March 31 2026.
-        // GetUserAccountInfo with TitleDisplayName is the correct replacement
-        // for exact display name lookups (PlayFab enforces unique display names per title).
         case 'search-players': {
             const query = (body.query || '').trim();
             if (!query) return { code: 400, errorMessage: 'No search query provided.' };
 
-            const result = await pfAdmin('GetUserAccountInfo', { TitleDisplayName: query }, env).catch(() => null);
+            const result = await pfAdmin('GetUserAccountInfo', { TitleDisplayName: query }, env).catch((e) => ({ _error: e.message }));
 
-            if (result?.code === 200 && result?.data?.UserInfo?.PlayFabId) {
-                const pfid = result.data.UserInfo.PlayFabId;
-                const name = result.data.UserInfo.TitleInfo?.DisplayName || query;
-                return { code: 200, data: [{ playFabId: pfid, displayName: name }] };
-            }
-
-            return { code: 200, data: [] };
+            // Return full raw response so we can see what PlayFab actually sends back
+            return { code: 200, debug: result, data: [] };
         }
         case 'add-announcement':
             return pfAdmin('AddNews', {
