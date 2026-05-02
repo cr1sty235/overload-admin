@@ -22,7 +22,12 @@ function searchPlayer() {
         if (!profile) { toast('Player not found', 'err'); return; }
 
         var resolvedId = profile.PlayerId || id;
-        setCurrentPlayer(resolvedId, profile.DisplayName || 'Unknown', profile.LastLogin, profile.Created, accountRes.data && accountRes.data.UserInfo);
+        var displayName = profile.DisplayName || 'Unknown';
+
+        // Auto-add to search index so display name search works going forward
+        api('index-player', { playFabId: resolvedId, displayName: displayName }).catch(function () { });
+
+        setCurrentPlayer(resolvedId, displayName, profile.LastLogin, profile.Created, accountRes.data && accountRes.data.UserInfo);
         toast('Loaded ' + currentPlayer.displayName);
 
     }).catch(function (e) { toast(e.message, 'err'); });
@@ -39,8 +44,6 @@ function searchByName() {
 
     api('search-players', { query: query })
         .then(function (d) {
-            console.log('search-players response:', JSON.stringify(d));
-
             if (d.code !== 200) {
                 el.innerHTML = '<div class="empty">' + escapeHtml(d.errorMessage || 'Search failed') + '</div>';
                 return;

@@ -250,14 +250,56 @@ async function handleRoute(route, body, env) {
         }
 
         // ── Search players by display name ──
+        // PlayFab has no reliable native search-by-display-name API after GetPlayersInSegment
+        // was retired March 31 2026. TitleDisplayName in GetUserAccountInfo is unreliable.
+        // We maintain our own PlayerIndex in TitleData: { "displayname": "masterPlayFabId" }
+        // It self-populates whenever any player is looked up by master ID.
         case 'search-players': {
-            const query = (body.query || '').trim();
+            const query = (body.query || '').trim().toLowerCase();
             if (!query) return { code: 400, errorMessage: 'No search query provided.' };
 
-            const result = await pfAdmin('GetUserAccountInfo', { TitleDisplayName: query }, env).catch((e) => ({ _error: e.message }));
+            const r = await pfAdmin('GetTitleData', { Keys: ['PlayerIndex'] }, env);
+            let index = {};
+            try {
+                const raw = r.data?.Data?.PlayerIndex;
+                if (raw) index = JSON.parse(raw);
+            } catch (e) { index = {}; }
 
-            // Return full raw response so we can see what PlayFab actually sends back
-            return { code: 200, debug: result, data: [] };
+            const matches = [];
+            for (const [name, pfid] of Object.entries(index)) {
+                if (name.toLowerCase().includes(query)) {
+                    matches.push({ playFabId: pfid, displayName: name });
+                }
+                if (matches.length >= 20) break;
+            }
+
+            return { code: 200, data: matches };
+        }
+
+        // ── Add player to search index ──
+        // Called automatically after every successful ID lookup.
+        case 'index-player': {
+            const { playFabId, displayName } = body;
+            if (!playFabId || !displayName) return { code: 400, errorMessage: 'Missing fields' };
+
+            const r = await pfAdmin('GetTitleData', { Keys: ['PlayerIndex'] }, env);
+            let index = {};
+            try {
+                const raw = r.data?.Data?.PlayerIndex;
+                if (raw) index = JSON.parse(raw);
+            } catch (e) { index = {}; }
+
+            index[displayName] = playFabId;
+
+            // Trim to 10k entries max
+            const keys = Object.keys(index);
+            if (keys.length > 10000) {
+                const trimmed = {};
+                keys.slice(-10000).forEach(k => { trimmed[k] = index[k]; });
+                index = trimmed;
+            }
+
+            return pfAdmin('SetTitleData', { Key: 'PlayerIndex', Value: JSON.stringify(index) }, env);
         }
         case 'add-announcement':
             return pfAdmin('AddNews', {
