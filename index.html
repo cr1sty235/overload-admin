@@ -1,204 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Overload Admin</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Overload Admin</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- ── Login ── -->
-<div id="login">
-  <div class="login-box">
-    <h1>⚡ Overload Admin</h1>
-    <p>Sign in with your admin token</p>
-    <div class="field">
-      <label>Admin Token</label>
-      <input id="i-token" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()">
+    <!-- ── Login ── -->
+    <div id="login">
+        <div class="login-box">
+            <h1>⚡ Overload Admin</h1>
+            <p>Sign in with your admin token</p>
+            <div class="field">
+                <label>Admin Token</label>
+                <input id="i-token" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter') doLogin()">
+            </div>
+            <button class="btn-primary" style="width:100%" onclick="doLogin()">Sign In</button>
+            <div id="login-err"></div>
+        </div>
     </div>
-    <button class="btn-primary" style="width:100%" onclick="doLogin()">Sign In</button>
-    <div id="login-err"></div>
-  </div>
-</div>
 
-<!-- ── App ── -->
-<div id="app">
-  <nav>
-    <div class="logo">⚡ Overload</div>
-    <div class="nav-tab active" onclick="showPage('players')">👤 Players</div>
-    <div class="nav-tab"        onclick="showPage('catalog')">📦 Catalog</div>
-    <div class="nav-tab"        onclick="showPage('mail')">✉ Mail</div>
-    <div class="nav-tab"        onclick="showPage('announce')">📣 Announce</div>
-    <div class="nav-tab"        onclick="showPage('popup')">💬 Popups</div>
-    <div class="spacer"></div>
-    <div class="panic-nav-btn" id="panic-nav-btn" onclick="showPage('panic')">🚨 PANIC</div>
-    <div class="sign-out" onclick="doLogout()">Sign Out</div>
-  </nav>
+    <!-- ── App ── -->
+    <div id="app">
+        <nav>
+            <div class="logo">⚡ Overload</div>
+            <div class="nav-tab active" onclick="showPage('players')">👤 Players</div>
+            <div class="nav-tab" onclick="showPage('catalog')">📦 Catalog</div>
+            <div class="nav-tab" onclick="showPage('mail')">✉ Mail</div>
+            <div class="nav-tab" onclick="showPage('announce')">📣 Announce</div>
+            <div class="nav-tab" onclick="showPage('popup')">💬 Popups</div>
+            <div class="spacer"></div>
+            <div class="panic-nav-btn" id="panic-nav-btn" onclick="showPage('panic')">🚨 PANIC</div>
+            <div class="sign-out" onclick="doLogout()">Sign Out</div>
+        </nav>
 
-  <!-- Players -->
-  <div class="page active" id="page-players">
-    <div class="pane-layout">
-      <div class="left-pane">
-        <div class="search-bar">
-          <input id="player-search" placeholder="PlayFab ID…" onkeydown="if(event.key==='Enter') searchPlayer()">
-          <button class="btn-primary btn-sm" onclick="searchPlayer()">Go</button>
+        <!-- Players -->
+        <div class="page active" id="page-players">
+            <div class="pane-layout">
+                <div class="left-pane">
+                    <div class="search-bar">
+                        <input id="player-search" placeholder="Display name or PlayFab ID…" onkeydown="if(event.key==='Enter') searchPlayer()">
+                        <button class="btn-primary btn-sm" onclick="searchPlayer()">Go</button>
+                    </div>
+                    <div class="section-label">RECENT</div>
+                    <div class="list" id="player-list">
+                        <div class="empty">No recent players</div>
+                    </div>
+                </div>
+                <div class="right-pane">
+                    <div class="detail" id="player-detail">
+                        <div class="detail-empty">
+                            <div class="detail-empty-icon">🔍</div>
+                            <div>Search for a player by PlayFab ID</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="section-label">RECENT</div>
-        <div class="list" id="player-list">
-          <div class="empty">No recent players</div>
-        </div>
-      </div>
-      <div class="right-pane">
-        <div class="detail" id="player-detail">
-          <div class="detail-empty">
-            <div class="detail-empty-icon">🔍</div>
-            <div>Search for a player by PlayFab ID</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Catalog -->
-  <div class="page" id="page-catalog">
-    <div class="catalog-layout">
-      <div class="catalog-sidebar">
-        <h3>Filter by Type</h3>
-        <div class="cat-filter active" onclick="setCatalogFilter('all')">All Items    <span class="count" id="cnt-all">0</span></div>
-        <div class="cat-filter"        onclick="setCatalogFilter('skin')">Skins        <span class="count" id="cnt-skin">0</span></div>
-        <div class="cat-filter"        onclick="setCatalogFilter('wrap')">Wraps        <span class="count" id="cnt-wrap">0</span></div>
-        <div class="cat-filter"        onclick="setCatalogFilter('charm')">Charms      <span class="count" id="cnt-charm">0</span></div>
-        <div class="cat-filter"        onclick="setCatalogFilter('crate')">Crates      <span class="count" id="cnt-crate">0</span></div>
-        <div class="cat-filter"        onclick="setCatalogFilter('other')">Other       <span class="count" id="cnt-other">0</span></div>
-        <div class="divider"></div>
-        <h3>Grant Selected To</h3>
-        <div class="field"><label>PlayFab ID</label><input id="cat-pfid" placeholder="Player ID"></div>
-        <div class="field"><label>Catalog Version</label><input id="cat-ver" placeholder="(blank = default)"></div>
-        <div class="catalog-grant-footer">
-          <button class="btn-success" onclick="grantSelected()">Grant Selected</button>
-          <button class="btn-ghost"   onclick="clearSelection()">Clear</button>
-          <div id="selection-label" class="selection-label"></div>
+        <!-- Catalog -->
+        <div class="page" id="page-catalog">
+            <div class="catalog-layout">
+                <div class="catalog-sidebar">
+                    <h3>Filter by Type</h3>
+                    <div class="cat-filter active" onclick="setCatalogFilter('all')">All Items    <span class="count" id="cnt-all">0</span></div>
+                    <div class="cat-filter" onclick="setCatalogFilter('skin')">Skins        <span class="count" id="cnt-skin">0</span></div>
+                    <div class="cat-filter" onclick="setCatalogFilter('wrap')">Wraps        <span class="count" id="cnt-wrap">0</span></div>
+                    <div class="cat-filter" onclick="setCatalogFilter('charm')">Charms      <span class="count" id="cnt-charm">0</span></div>
+                    <div class="cat-filter" onclick="setCatalogFilter('crate')">Crates      <span class="count" id="cnt-crate">0</span></div>
+                    <div class="cat-filter" onclick="setCatalogFilter('other')">Other       <span class="count" id="cnt-other">0</span></div>
+                    <div class="divider"></div>
+                    <h3>Grant Selected To</h3>
+                    <div class="field"><label>PlayFab ID</label><input id="cat-pfid" placeholder="Player ID"></div>
+                    <div class="field"><label>Catalog Version</label><input id="cat-ver" placeholder="(blank = default)"></div>
+                    <div class="catalog-grant-footer">
+                        <button class="btn-success" onclick="grantSelected()">Grant Selected</button>
+                        <button class="btn-ghost" onclick="clearSelection()">Clear</button>
+                        <div id="selection-label" class="selection-label"></div>
+                    </div>
+                </div>
+                <div class="catalog-main">
+                    <div class="catalog-toolbar">
+                        <input id="catalog-search" placeholder="Search items…" oninput="filterCatalog()">
+                        <button class="btn-ghost btn-sm" onclick="loadCatalog()">↻ Refresh</button>
+                    </div>
+                    <div class="catalog-grid" id="catalog-items">
+                        <div class="empty" style="grid-column:1/-1">Loading catalog…</div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="catalog-main">
-        <div class="catalog-toolbar">
-          <input id="catalog-search" placeholder="Search items…" oninput="filterCatalog()">
-          <button class="btn-ghost btn-sm" onclick="loadCatalog()">↻ Refresh</button>
-        </div>
-        <div class="catalog-grid" id="catalog-items">
-          <div class="empty" style="grid-column:1/-1">Loading catalog…</div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Mail -->
-  <div class="page" id="page-mail">
-    <div class="mail-layout">
-      <div class="mail-sidebar">
-        <h3>Mail</h3>
-        <div class="mail-section active" id="msec-compose"    onclick="showMailSection('compose')">✉ Compose</div>
-        <div class="mail-section"        id="msec-broadcast"  onclick="showMailSection('broadcast')">📡 Broadcast (All)</div>
-        <div class="mail-section"        id="msec-history"    onclick="showMailSection('history')">📋 Sent History</div>
-        <div class="mail-section"        id="msec-broadcasts" onclick="showMailSection('broadcasts')">📢 Active Broadcasts</div>
-      </div>
-      <div class="mail-main" id="mail-main"></div>
-    </div>
-  </div>
-
-  <!-- Announcements -->
-  <div class="page" id="page-announce">
-    <div class="announce-layout">
-      <div class="announce-composer">
-        <div class="card">
-          <div class="card-title">New Announcement / Patch Notes</div>
-          <div class="field"><label>Title</label><input id="ann-title" placeholder="e.g. v1.2.0 Patch Notes"></div>
-          <div class="field">
-            <label>Type</label>
-            <select id="ann-type">
-              <option value="Announcement">Announcement</option>
-              <option value="PatchNotes">Patch Notes</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Body</label>
-            <textarea id="ann-body" style="min-height:220px" placeholder="Write your announcement here…"></textarea>
-          </div>
-          <div class="field">
-            <label>Image URL (optional — host on Imgur, R2, etc.)</label>
-            <input id="ann-img" placeholder="https://…">
-          </div>
-          <button class="btn-success" onclick="postAnnouncement()">Post</button>
+        <!-- Mail -->
+        <div class="page" id="page-mail">
+            <div class="mail-layout">
+                <div class="mail-sidebar">
+                    <h3>Mail</h3>
+                    <div class="mail-section active" id="msec-compose" onclick="showMailSection('compose')">✉ Compose</div>
+                    <div class="mail-section" id="msec-broadcast" onclick="showMailSection('broadcast')">📡 Broadcast (All)</div>
+                    <div class="mail-section" id="msec-history" onclick="showMailSection('history')">📋 Sent History</div>
+                    <div class="mail-section" id="msec-broadcasts" onclick="showMailSection('broadcasts')">📢 Active Broadcasts</div>
+                </div>
+                <div class="mail-main" id="mail-main"></div>
+            </div>
         </div>
-      </div>
-      <div class="announce-list-panel">
-        <div class="card">
-          <div class="card-title">Published <button class="btn-ghost btn-sm" onclick="loadAnnouncements()">↻ Refresh</button></div>
-          <div id="ann-list"><div class="empty">Loading…</div></div>
+
+        <!-- Announcements -->
+        <div class="page" id="page-announce">
+            <div class="announce-layout">
+                <div class="announce-composer">
+                    <div class="card">
+                        <div class="card-title">New Announcement / Patch Notes</div>
+                        <div class="field"><label>Title</label><input id="ann-title" placeholder="e.g. v1.2.0 Patch Notes"></div>
+                        <div class="field">
+                            <label>Type</label>
+                            <select id="ann-type">
+                                <option value="Announcement">Announcement</option>
+                                <option value="PatchNotes">Patch Notes</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label>Body</label>
+                            <textarea id="ann-body" style="min-height:220px" placeholder="Write your announcement here…"></textarea>
+                        </div>
+                        <div class="field">
+                            <label>Image URL (optional — host on Imgur, R2, etc.)</label>
+                            <input id="ann-img" placeholder="https://…">
+                        </div>
+                        <button class="btn-success" onclick="postAnnouncement()">Post</button>
+                    </div>
+                </div>
+                <div class="announce-list-panel">
+                    <div class="card">
+                        <div class="card-title">Published <button class="btn-ghost btn-sm" onclick="loadAnnouncements()">↻ Refresh</button></div>
+                        <div id="ann-list"><div class="empty">Loading…</div></div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Popups -->
-  <div class="page" id="page-popup">
-    <div class="single-column-page">
-      <div class="card">
-        <div class="card-title">Send In-Game Popup</div>
-        <div class="info-box">Clients poll PlayFab Title Data for the ActivePopup key. When a new popup is detected they show it on screen.</div>
-        <div class="field">
-          <label>Popup Message</label>
-          <input id="popup-msg" placeholder="e.g. New update available! Restart to play." oninput="updatePopupPreview()">
+        <!-- Popups -->
+        <div class="page" id="page-popup">
+            <div class="single-column-page">
+                <div class="card">
+                    <div class="card-title">Send In-Game Popup</div>
+                    <div class="info-box">Clients poll PlayFab Title Data for the ActivePopup key. When a new popup is detected they show it on screen.</div>
+                    <div class="field">
+                        <label>Popup Message</label>
+                        <input id="popup-msg" placeholder="e.g. New update available! Restart to play." oninput="updatePopupPreview()">
+                    </div>
+                    <div class="popup-preview" id="popup-preview">Your message will appear here</div>
+                    <div class="btn-row" style="margin-top:14px">
+                        <button class="btn-success" onclick="sendPopup()">📤 Send to All Players</button>
+                        <button class="btn-ghost" onclick="clearPopup()">✕ Clear Active Popup</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Current Active Popup <button class="btn-ghost btn-sm" onclick="loadCurrentPopup()">↻ Refresh</button></div>
+                    <div id="current-popup"><div class="empty">Loading…</div></div>
+                </div>
+            </div>
         </div>
-        <div class="popup-preview" id="popup-preview">Your message will appear here</div>
-        <div class="btn-row" style="margin-top:14px">
-          <button class="btn-success" onclick="sendPopup()">📤 Send to All Players</button>
-          <button class="btn-ghost"   onclick="clearPopup()">✕ Clear Active Popup</button>
+
+        <!-- Panic -->
+        <div class="page" id="page-panic">
+            <div class="panic-page">
+                <div class="panic-card" id="panic-card">
+                    <h2>🚨 Panic Shutdown</h2>
+                    <p>When enabled, all clients check this flag and disconnect immediately. Use only in an emergency — all players in active games will be kicked.</p>
+                    <div class="panic-status" id="panic-status">Loading…</div>
+                    <button class="panic-toggle-btn" id="panic-toggle-btn" onclick="togglePanic()">Enable Panic Shutdown</button>
+                    <div class="panic-sub" id="panic-sub">Fetching current state…</div>
+                </div>
+                <div class="card panic-info-card">
+                    <div class="card-title">What this does</div>
+                    <div class="panic-info-list">
+                        <div>✓ Sets <code>PanicShutdown = true</code> in PlayFab Title Data</div>
+                        <div>✓ All Unity clients poll this key every 30 seconds</div>
+                        <div>✓ On detection: force disconnect + show maintenance screen</div>
+                        <div>✓ New clients that try to login are also blocked</div>
+                        <div>✓ Disable here when ready to restore service</div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-title">Current Active Popup <button class="btn-ghost btn-sm" onclick="loadCurrentPopup()">↻ Refresh</button></div>
-        <div id="current-popup"><div class="empty">Loading…</div></div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Panic -->
-  <div class="page" id="page-panic">
-    <div class="panic-page">
-      <div class="panic-card" id="panic-card">
-        <h2>🚨 Panic Shutdown</h2>
-        <p>When enabled, all clients check this flag and disconnect immediately. Use only in an emergency — all players in active games will be kicked.</p>
-        <div class="panic-status" id="panic-status">Loading…</div>
-        <button class="panic-toggle-btn" id="panic-toggle-btn" onclick="togglePanic()">Enable Panic Shutdown</button>
-        <div class="panic-sub" id="panic-sub">Fetching current state…</div>
-      </div>
-      <div class="card panic-info-card">
-        <div class="card-title">What this does</div>
-        <div class="panic-info-list">
-          <div>✓ Sets <code>PanicShutdown = true</code> in PlayFab Title Data</div>
-          <div>✓ All Unity clients poll this key every 30 seconds</div>
-          <div>✓ On detection: force disconnect + show maintenance screen</div>
-          <div>✓ New clients that try to login are also blocked</div>
-          <div>✓ Disable here when ready to restore service</div>
-        </div>
-      </div>
-    </div>
-  </div>
+    </div><!-- end app -->
 
-</div><!-- end app -->
+    <div id="toast"></div>
 
-<div id="toast"></div>
-
-<script src="js/api.js"></script>
-<script src="js/app.js"></script>
-<script src="js/players.js"></script>
-<script src="js/catalog.js"></script>
-<script src="js/mail.js"></script>
-<script src="js/announcements.js"></script>
-<script src="js/popups.js"></script>
-<script src="js/panic.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/players.js"></script>
+    <script src="js/catalog.js"></script>
+    <script src="js/mail.js"></script>
+    <script src="js/announcements.js"></script>
+    <script src="js/popups.js"></script>
+    <script src="js/panic.js"></script>
 
 </body>
 </html>

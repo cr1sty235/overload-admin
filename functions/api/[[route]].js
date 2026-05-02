@@ -26,7 +26,7 @@ export async function onRequest(context) {
         return response({ error: 'Unauthorized' }, 401);
     }
 
-    const body  = await request.json().catch(() => ({}));
+    const body = await request.json().catch(() => ({}));
     const route = url.pathname.replace('/api/', '');
 
     try {
@@ -42,61 +42,104 @@ async function handleRoute(route, body, env) {
     switch (route) {
 
         // ── Players ──
-        case 'lookup-player':
-            return pfAdmin('GetPlayerProfile', {
-                PlayFabId: body.playFabId,
+        case 'lookup-player': {
+            // Try to resolve whatever the user typed — could be PlayFab ID,
+            // username, email, or display name. Try each in order.
+            const query = body.playFabId;
+
+            // 1. Try as PlayFab ID directly
+            let result = await pfAdmin('GetPlayerProfile', {
+                PlayFabId: query,
                 ProfileConstraints: {
                     ShowDisplayName: true, ShowLocations: true,
-                    ShowLastLogin: true,   ShowCreated: true,
+                    ShowLastLogin: true, ShowCreated: true,
                 }
             }, env);
 
-        case 'get-account':
-            return pfAdmin('GetUserAccountInfo', { PlayFabId: body.playFabId }, env);
+            if (result.code === 200 && result.data?.PlayerProfile) return result;
+
+            // 2. Try LookupUserAccountInfo which searches by username, email, display name
+            const lookup = await pfAdmin('LookupUserAccountInfo', {
+                Username: query,
+                Email: query.includes('@') ? query : undefined,
+                TitleDisplayName: query,
+            }, env);
+
+            if (lookup.code === 200 && lookup.data?.UserInfo) {
+                const pfid = lookup.data.UserInfo.PlayFabId;
+                // Now fetch the full profile using the resolved ID
+                return pfAdmin('GetPlayerProfile', {
+                    PlayFabId: pfid,
+                    ProfileConstraints: {
+                        ShowDisplayName: true, ShowLocations: true,
+                        ShowLastLogin: true, ShowCreated: true,
+                    }
+                }, env);
+            }
+
+            // 3. Nothing found
+            return { code: 404, data: null };
+        }
+
+        case 'get-account': {
+            // First resolve display name / username to a PlayFab ID
+            let pfid = body.playFabId;
+
+            const lookup = await pfAdmin('LookupUserAccountInfo', {
+                TitleDisplayName: pfid,
+                Username: pfid,
+            }, env).catch(() => null);
+
+            if (lookup?.code === 200 && lookup?.data?.UserInfo?.PlayFabId) {
+                pfid = lookup.data.UserInfo.PlayFabId;
+            }
+
+            return pfAdmin('GetUserAccountInfo', { PlayFabId: pfid }, env);
+        }
 
         case 'get-inventory':
             return pfServer('GetUserInventory', {
-                PlayFabId:      body.playFabId,
+                PlayFabId: body.playFabId,
                 CatalogVersion: body.catalogVersion || '',
             }, env);
 
         case 'get-userdata':
             return pfServer('GetUserData', {
                 PlayFabId: body.playFabId,
-                Keys:      body.keys || [],
+                Keys: body.keys || [],
             }, env);
 
         case 'set-userdata':
             return pfServer('UpdateUserData', {
                 PlayFabId: body.playFabId,
-                Data:      body.data,
+                Data: body.data,
             }, env);
 
         case 'grant-items':
             return pfServer('GrantItemsToUser', {
-                PlayFabId:      body.playFabId,
-                ItemIds:        body.itemIds,
+                PlayFabId: body.playFabId,
+                ItemIds: body.itemIds,
                 CatalogVersion: body.catalogVersion || '',
             }, env);
 
         case 'revoke-item':
             return pfAdmin('RevokeInventoryItem', {
-                PlayFabId:      body.playFabId,
+                PlayFabId: body.playFabId,
                 ItemInstanceId: body.itemInstanceId,
             }, env);
 
         case 'add-currency':
             return pfServer('AddUserVirtualCurrency', {
-                PlayFabId:       body.playFabId,
+                PlayFabId: body.playFabId,
                 VirtualCurrency: body.currencyCode,
-                Amount:          body.amount,
+                Amount: body.amount,
             }, env);
 
         case 'subtract-currency':
             return pfServer('SubtractUserVirtualCurrency', {
-                PlayFabId:       body.playFabId,
+                PlayFabId: body.playFabId,
                 VirtualCurrency: body.currencyCode,
-                Amount:          body.amount,
+                Amount: body.amount,
             }, env);
 
         case 'ban-player':
@@ -116,8 +159,8 @@ async function handleRoute(route, body, env) {
 
         // ── Mail — single player ──
         case 'send-mail': {
-            const mailKey   = 'SystemMail';
-            const existing  = await pfServer('GetUserData', { PlayFabId: body.playFabId, Keys: [mailKey] }, env);
+            const mailKey = 'SystemMail';
+            const existing = await pfServer('GetUserData', { PlayFabId: body.playFabId, Keys: [mailKey] }, env);
 
             let mailArr = [];
             try {
@@ -126,17 +169,17 @@ async function handleRoute(route, body, env) {
             } catch (e) { mailArr = []; }
 
             const item = {
-                id:      Date.now().toString(),
-                subject: body.subject   || '(No subject)',
-                body:    body.body      || '',
-                from:    'Admin',
-                sentAt:  new Date().toISOString(),
+                id: Date.now().toString(),
+                subject: body.subject || '(No subject)',
+                body: body.body || '',
+                from: 'Admin',
+                sentAt: new Date().toISOString(),
                 claimed: false,
                 deleted: false,
                 grants: {
-                    itemIds:      body.itemIds      || [],
+                    itemIds: body.itemIds || [],
                     currencyCode: body.currencyCode || '',
-                    currencyAmt:  body.currencyAmt  || 0,
+                    currencyAmt: body.currencyAmt || 0,
                 }
             };
 
@@ -154,7 +197,7 @@ async function handleRoute(route, body, env) {
         // ── Mail — broadcast to all players ──
         case 'broadcast-mail': {
             const broadcastKey = 'BroadcastMail';
-            const existing     = await pfAdmin('GetTitleData', { Keys: [broadcastKey] }, env);
+            const existing = await pfAdmin('GetTitleData', { Keys: [broadcastKey] }, env);
 
             let broadcasts = [];
             try {
@@ -163,15 +206,15 @@ async function handleRoute(route, body, env) {
             } catch (e) { broadcasts = []; }
 
             const item = {
-                id:      Date.now().toString(),
-                subject: body.subject   || '(No subject)',
-                body:    body.body      || '',
-                from:    'Admin',
-                sentAt:  new Date().toISOString(),
+                id: Date.now().toString(),
+                subject: body.subject || '(No subject)',
+                body: body.body || '',
+                from: 'Admin',
+                sentAt: new Date().toISOString(),
                 grants: {
-                    itemIds:      body.itemIds      || [],
+                    itemIds: body.itemIds || [],
                     currencyCode: body.currencyCode || '',
-                    currencyAmt:  body.currencyAmt  || 0,
+                    currencyAmt: body.currencyAmt || 0,
                 }
             };
 
@@ -208,8 +251,8 @@ async function handleRoute(route, body, env) {
         // ── Announcements ──
         case 'add-announcement':
             return pfAdmin('AddNews', {
-                Title:     body.title || '(No title)',
-                Body:      body.body  || '',
+                Title: body.title || '(No title)',
+                Body: body.body || '',
                 Timestamp: new Date().toISOString(),
             }, env);
 
@@ -237,7 +280,7 @@ async function handleRoute(route, body, env) {
             return pfAdmin('SetTitleData', { Key: 'PanicShutdown', Value: body.enabled ? 'true' : 'false' }, env);
 
         case 'get-panic': {
-            const r   = await pfAdmin('GetTitleData', { Keys: ['PanicShutdown'] }, env);
+            const r = await pfAdmin('GetTitleData', { Keys: ['PanicShutdown'] }, env);
             const raw = r.data?.Data?.PanicShutdown;
             return { code: 200, data: raw === 'true' };
         }
@@ -257,19 +300,19 @@ async function appendSentLog(env, entry) {
         log.unshift(entry);
         if (log.length > 100) log = log.slice(0, 100);
         await pfAdmin('SetTitleData', { Key: 'AdminSentLog', Value: JSON.stringify(log) }, env);
-    } catch (e) {}
+    } catch (e) { }
 }
 
-async function pfAdmin(endpoint, body, env) { return pfCall('Admin',  endpoint, body, env); }
-async function pfServer(endpoint, body, env){ return pfCall('Server', endpoint, body, env); }
+async function pfAdmin(endpoint, body, env) { return pfCall('Admin', endpoint, body, env); }
+async function pfServer(endpoint, body, env) { return pfCall('Server', endpoint, body, env); }
 
 async function pfCall(api, endpoint, body, env) {
     const r = await fetch(
         `https://${env.PLAYFAB_TITLE_ID}.playfabapi.com/${api}/${endpoint}`,
         {
-            method:  'POST',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-SecretKey': env.PLAYFAB_SECRET_KEY },
-            body:    JSON.stringify(body),
+            body: JSON.stringify(body),
         }
     );
     return r.json();
@@ -277,7 +320,7 @@ async function pfCall(api, endpoint, body, env) {
 
 function corsHeaders() {
     return {
-        'Access-Control-Allow-Origin':  '*',
+        'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': '*',
         'Access-Control-Allow-Methods': 'POST, OPTIONS',
     };
