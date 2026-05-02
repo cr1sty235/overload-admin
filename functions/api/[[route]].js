@@ -43,11 +43,24 @@ async function handleRoute(route, body, env) {
 
         // ── Players ──
         case 'lookup-player': {
-            // Try to resolve whatever the user typed — could be PlayFab ID,
-            // username, email, or display name. Try each in order.
             const query = body.playFabId;
 
-            // 1. Try as PlayFab ID directly
+            // Helper: given a master player account ID, get the title player profile
+            async function profileFromMasterId(masterId) {
+                // GetUserAccountInfo gives us the TitleInfo including TitlePlayerAccountId
+                const acct = await pfAdmin('GetUserAccountInfo', { PlayFabId: masterId }, env);
+                const titleId = acct.data?.UserInfo?.TitleInfo?.TitlePlayerAccountId;
+                if (!titleId) return null;
+                return pfAdmin('GetPlayerProfile', {
+                    PlayFabId: titleId,
+                    ProfileConstraints: {
+                        ShowDisplayName: true, ShowLocations: true,
+                        ShowLastLogin: true, ShowCreated: true,
+                    }
+                }, env);
+            }
+
+            // 1. Try directly as a title player account ID
             let result = await pfAdmin('GetPlayerProfile', {
                 PlayFabId: query,
                 ProfileConstraints: {
@@ -58,43 +71,47 @@ async function handleRoute(route, body, env) {
 
             if (result.code === 200 && result.data?.PlayerProfile) return result;
 
-            // 2. Try LookupUserAccountInfo which searches by username, email, display name
-            const lookup = await pfAdmin('LookupUserAccountInfo', {
-                Username: query,
-                Email: query.includes('@') ? query : undefined,
-                TitleDisplayName: query,
-            }, env);
+            // 2. Try as master player account ID
+            result = await profileFromMasterId(query).catch(() => null);
+            if (result?.code === 200 && result.data?.PlayerProfile) return result;
 
-            if (lookup.code === 200 && lookup.data?.UserInfo) {
-                const pfid = lookup.data.UserInfo.PlayFabId;
-                // Now fetch the full profile using the resolved ID
-                return pfAdmin('GetPlayerProfile', {
-                    PlayFabId: pfid,
-                    ProfileConstraints: {
-                        ShowDisplayName: true, ShowLocations: true,
-                        ShowLastLogin: true, ShowCreated: true,
-                    }
-                }, env);
+            // 3. Try display name lookup → get master ID → get title profile
+            const lookup = await pfAdmin('LookupUserAccountInfo', {
+                TitleDisplayName: query,
+            }, env).catch(() => null);
+
+            if (lookup?.code === 200 && lookup?.data?.UserInfo?.PlayFabId) {
+                result = await profileFromMasterId(lookup.data.UserInfo.PlayFabId).catch(() => null);
+                if (result?.code === 200 && result.data?.PlayerProfile) return result;
             }
 
-            // 3. Nothing found
+            // 4. Try username lookup
+            const byUsername = await pfAdmin('LookupUserAccountInfo', {
+                Username: query,
+            }, env).catch(() => null);
+
+            if (byUsername?.code === 200 && byUsername?.data?.UserInfo?.PlayFabId) {
+                result = await profileFromMasterId(byUsername.data.UserInfo.PlayFabId).catch(() => null);
+                if (result?.code === 200 && result.data?.PlayerProfile) return result;
+            }
+
             return { code: 404, data: null };
         }
 
         case 'get-account': {
-            // First resolve display name / username to a PlayFab ID
-            let pfid = body.playFabId;
+            const query = body.playFabId;
 
-            const lookup = await pfAdmin('LookupUserAccountInfo', {
-                TitleDisplayName: pfid,
-                Username: pfid,
-            }, env).catch(() => null);
+            // Try directly first (works if it's a master player ID)
+            let result = await pfAdmin('GetUserAccountInfo', { PlayFabId: query }, env);
+            if (result.code === 200) return result;
 
+            // Try display name → master ID → account info
+            const lookup = await pfAdmin('LookupUserAccountInfo', { TitleDisplayName: query }, env).catch(() => null);
             if (lookup?.code === 200 && lookup?.data?.UserInfo?.PlayFabId) {
-                pfid = lookup.data.UserInfo.PlayFabId;
+                return pfAdmin('GetUserAccountInfo', { PlayFabId: lookup.data.UserInfo.PlayFabId }, env);
             }
 
-            return pfAdmin('GetUserAccountInfo', { PlayFabId: pfid }, env);
+            return result;
         }
 
         case 'get-inventory':
