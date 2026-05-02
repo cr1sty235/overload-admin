@@ -18,11 +18,15 @@ function searchPlayer() {
         var profileRes = results[0];
         var accountRes = results[1];
 
-        var profile = profileRes.data && profileRes.data.PlayerProfile;
-        if (!profile) { toast('Player not found', 'err'); return; }
+        // Debug — remove once working
+        console.log('lookup-player response:', JSON.stringify(profileRes));
 
-        // Use the resolved PlayFab ID from the profile, not the raw search input
-        // (important when searching by display name)
+        var profile = profileRes.data && profileRes.data.PlayerProfile;
+        if (!profile) {
+            toast('Player not found — check console for details', 'err');
+            return;
+        }
+
         var resolvedId = profile.PlayerId || id;
 
         currentPlayer = {
@@ -41,7 +45,7 @@ function searchPlayer() {
         renderPlayerDetail();
         toast('Loaded ' + currentPlayer.displayName);
 
-    }).catch(function (e) { toast(e.message, 'err'); });
+    }).catch(function (e) { toast(e.message, 'err'); console.error(e); });
 }
 
 function loadRecentPlayer(pfid) {

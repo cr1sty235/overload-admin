@@ -45,57 +45,47 @@ async function handleRoute(route, body, env) {
         case 'lookup-player': {
             const query = body.playFabId;
 
-            // Helper: given a master player account ID, get the title player profile
-            async function profileFromMasterId(masterId) {
-                // GetUserAccountInfo gives us the TitleInfo including TitlePlayerAccountId
-                const acct = await pfAdmin('GetUserAccountInfo', { PlayFabId: masterId }, env);
-                const titleId = acct.data?.UserInfo?.TitleInfo?.TitlePlayerAccountId;
-                if (!titleId) return null;
-                return pfAdmin('GetPlayerProfile', {
-                    PlayFabId: titleId,
-                    ProfileConstraints: {
-                        ShowDisplayName: true, ShowLocations: true,
-                        ShowLastLogin: true, ShowCreated: true,
-                    }
-                }, env);
-            }
+            const profileConstraints = {
+                ShowDisplayName: true, ShowLocations: true,
+                ShowLastLogin: true, ShowCreated: true,
+            };
 
-            // 1. Try directly as a title player account ID
+            // 1. Try directly — works for both master ID and title player ID
             let result = await pfAdmin('GetPlayerProfile', {
                 PlayFabId: query,
-                ProfileConstraints: {
-                    ShowDisplayName: true, ShowLocations: true,
-                    ShowLastLogin: true, ShowCreated: true,
-                }
+                ProfileConstraints: profileConstraints,
             }, env);
 
             if (result.code === 200 && result.data?.PlayerProfile) return result;
 
-            // 2. Try as master player account ID
-            result = await profileFromMasterId(query).catch(() => null);
-            if (result?.code === 200 && result.data?.PlayerProfile) return result;
-
-            // 3. Try display name lookup → get master ID → get title profile
-            const lookup = await pfAdmin('LookupUserAccountInfo', {
+            // 2. Try display name search
+            const byDisplayName = await pfAdmin('LookupUserAccountInfo', {
                 TitleDisplayName: query,
             }, env).catch(() => null);
 
-            if (lookup?.code === 200 && lookup?.data?.UserInfo?.PlayFabId) {
-                result = await profileFromMasterId(lookup.data.UserInfo.PlayFabId).catch(() => null);
-                if (result?.code === 200 && result.data?.PlayerProfile) return result;
+            if (byDisplayName?.code === 200 && byDisplayName?.data?.UserInfo?.PlayFabId) {
+                result = await pfAdmin('GetPlayerProfile', {
+                    PlayFabId: byDisplayName.data.UserInfo.PlayFabId,
+                    ProfileConstraints: profileConstraints,
+                }, env);
+                if (result.code === 200 && result.data?.PlayerProfile) return result;
             }
 
-            // 4. Try username lookup
+            // 3. Try username search
             const byUsername = await pfAdmin('LookupUserAccountInfo', {
                 Username: query,
             }, env).catch(() => null);
 
             if (byUsername?.code === 200 && byUsername?.data?.UserInfo?.PlayFabId) {
-                result = await profileFromMasterId(byUsername.data.UserInfo.PlayFabId).catch(() => null);
-                if (result?.code === 200 && result.data?.PlayerProfile) return result;
+                result = await pfAdmin('GetPlayerProfile', {
+                    PlayFabId: byUsername.data.UserInfo.PlayFabId,
+                    ProfileConstraints: profileConstraints,
+                }, env);
+                if (result.code === 200 && result.data?.PlayerProfile) return result;
             }
 
-            return { code: 404, data: null };
+            // 4. Return whatever the last error was so we can debug it
+            return result;
         }
 
         case 'get-account': {
