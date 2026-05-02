@@ -50,42 +50,44 @@ async function handleRoute(route, body, env) {
                 ShowLastLogin: true, ShowCreated: true,
             };
 
-            // 1. Try directly — works for both master ID and title player ID
-            let result = await pfAdmin('GetPlayerProfile', {
-                PlayFabId: query,
-                ProfileConstraints: profileConstraints,
-            }, env);
+            // Only call GetPlayerProfile if the input looks like a hex ID
+            const isHexId = /^[0-9A-Fa-f]{12,20}$/.test(query);
 
-            if (result.code === 200 && result.data?.PlayerProfile) return result;
+            if (isHexId) {
+                const result = await pfAdmin('GetPlayerProfile', {
+                    PlayFabId: query,
+                    ProfileConstraints: profileConstraints,
+                }, env);
+                if (result.code === 200 && result.data?.PlayerProfile) return result;
+            }
 
-            // 2. Try display name search
+            // Try display name
             const byDisplayName = await pfAdmin('LookupUserAccountInfo', {
                 TitleDisplayName: query,
             }, env).catch(() => null);
 
             if (byDisplayName?.code === 200 && byDisplayName?.data?.UserInfo?.PlayFabId) {
-                result = await pfAdmin('GetPlayerProfile', {
+                const result = await pfAdmin('GetPlayerProfile', {
                     PlayFabId: byDisplayName.data.UserInfo.PlayFabId,
                     ProfileConstraints: profileConstraints,
                 }, env);
                 if (result.code === 200 && result.data?.PlayerProfile) return result;
             }
 
-            // 3. Try username search
+            // Try username
             const byUsername = await pfAdmin('LookupUserAccountInfo', {
                 Username: query,
             }, env).catch(() => null);
 
             if (byUsername?.code === 200 && byUsername?.data?.UserInfo?.PlayFabId) {
-                result = await pfAdmin('GetPlayerProfile', {
+                const result = await pfAdmin('GetPlayerProfile', {
                     PlayFabId: byUsername.data.UserInfo.PlayFabId,
                     ProfileConstraints: profileConstraints,
                 }, env);
                 if (result.code === 200 && result.data?.PlayerProfile) return result;
             }
 
-            // 4. Return whatever the last error was so we can debug it
-            return result;
+            return { code: 404, data: null, errorMessage: 'Player not found' };
         }
 
         case 'get-account': {
