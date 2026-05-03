@@ -250,56 +250,47 @@ async function handleRoute(route, body, env) {
         }
 
         // ── Search players by display name ──
-        // PlayFab has no reliable native search-by-display-name API after GetPlayersInSegment
-        // was retired March 31 2026. TitleDisplayName in GetUserAccountInfo is unreliable.
-        // We maintain our own PlayerIndex in TitleData: { "displayname": "masterPlayFabId" }
-        // It self-populates whenever any player is looked up by master ID.
+        // Uses a dedicated D1-backed search worker for full-text search.
+        // SEARCH_WORKER_URL and SEARCH_API_KEY must be set in Pages env variables.
         case 'search-players': {
-            const query = (body.query || '').trim().toLowerCase();
+            const query = (body.query || '').trim();
             if (!query) return { code: 400, errorMessage: 'No search query provided.' };
 
-            const r = await pfAdmin('GetTitleData', { Keys: ['PlayerIndex'] }, env);
-            let index = {};
-            try {
-                const raw = r.data?.Data?.PlayerIndex;
-                if (raw) index = JSON.parse(raw);
-            } catch (e) { index = {}; }
+            if (!env.SEARCH_WORKER_URL) return { code: 500, errorMessage: 'SEARCH_WORKER_URL not configured in environment variables.' };
 
-            const matches = [];
-            for (const [name, pfid] of Object.entries(index)) {
-                if (name.toLowerCase().includes(query)) {
-                    matches.push({ playFabId: pfid, displayName: name });
-                }
-                if (matches.length >= 20) break;
-            }
+            const r = await fetch(env.SEARCH_WORKER_URL + '/search?q=' + encodeURIComponent(query), {
+                headers: { 'x-api-key': env.SEARCH_API_KEY || '' }
+            });
 
-            return { code: 200, data: matches };
+            if (!r.ok) return { code: 500, errorMessage: 'Search worker returned ' + r.status };
+
+            const results = await r.json();
+            return {
+                code: 200,
+                data: results.map(function (p) {
+                    return { playFabId: p.playfab_id, displayName: p.display_name };
+                })
+            };
         }
 
-        // ── Add player to search index ──
-        // Called automatically after every successful ID lookup.
+        // ── Index a player into the D1 search database ──
+        // Called automatically after every successful player lookup by ID.
         case 'index-player': {
             const { playFabId, displayName } = body;
-            if (!playFabId || !displayName) return { code: 400, errorMessage: 'Missing fields' };
+            if (!playFabId || !displayName) return { code: 400, errorMessage: 'Missing playFabId or displayName' };
 
-            const r = await pfAdmin('GetTitleData', { Keys: ['PlayerIndex'] }, env);
-            let index = {};
-            try {
-                const raw = r.data?.Data?.PlayerIndex;
-                if (raw) index = JSON.parse(raw);
-            } catch (e) { index = {}; }
+            if (!env.SEARCH_WORKER_URL) return { code: 200 }; // silently skip if not configured
 
-            index[displayName] = playFabId;
+            await fetch(env.SEARCH_WORKER_URL + '/upsert', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': env.SEARCH_API_KEY || ''
+                },
+                body: JSON.stringify({ playfab_id: playFabId, display_name: displayName })
+            }).catch(() => { }); // non-fatal — don't break the main request if indexing fails
 
-            // Trim to 10k entries max
-            const keys = Object.keys(index);
-            if (keys.length > 10000) {
-                const trimmed = {};
-                keys.slice(-10000).forEach(k => { trimmed[k] = index[k]; });
-                index = trimmed;
-            }
-
-            return pfAdmin('SetTitleData', { Key: 'PlayerIndex', Value: JSON.stringify(index) }, env);
+            return { code: 200 };
         }
         case 'add-announcement':
             return pfAdmin('AddNews', {
