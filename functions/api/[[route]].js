@@ -278,6 +278,26 @@ async function handleRoute(route, body, env) {
 
         // ── Index a player into the D1 search database ──
         // Called automatically after every successful player lookup by ID.
+        // ── Online Players ──
+        // Reads the OnlinePlayers TitleData key written by Unity clients via heartbeat.
+        // Format: { "masterPlayFabId": "displayName", ... }
+        // Unity writes this on login and every 60s, removes itself on disconnect.
+        case 'get-online-players': {
+            const r = await pfAdmin('GetTitleData', { Keys: ['OnlinePlayers'] }, env);
+            let players = [];
+            try {
+                const raw = r.data?.Data?.OnlinePlayers;
+                if (raw) {
+                    const map = JSON.parse(raw);
+                    players = Object.entries(map).map(([pfid, name]) => ({
+                        playFabId: pfid,
+                        displayName: name,
+                    }));
+                }
+            } catch (e) { players = []; }
+            return { code: 200, data: players };
+        }
+
         case 'add-announcement':
             return pfAdmin('AddNews', {
                 Title: body.title || '(No title)',
