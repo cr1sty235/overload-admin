@@ -275,23 +275,6 @@ async function handleRoute(route, body, env) {
 
         // ── Index a player into the D1 search database ──
         // Called automatically after every successful player lookup by ID.
-        case 'index-player': {
-            const { playFabId, displayName } = body;
-            if (!playFabId || !displayName) return { code: 400, errorMessage: 'Missing playFabId or displayName' };
-
-            if (!env.SEARCH_WORKER_URL) return { code: 200 }; // silently skip if not configured
-
-            await fetch(env.SEARCH_WORKER_URL + '/upsert', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': env.SEARCH_API_KEY || ''
-                },
-                body: JSON.stringify({ playfab_id: playFabId, display_name: displayName })
-            }).catch(() => { }); // non-fatal — don't break the main request if indexing fails
-
-            return { code: 200 };
-        }
         case 'add-announcement':
             return pfAdmin('AddNews', {
                 Title: body.title || '(No title)',

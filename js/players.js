@@ -24,9 +24,6 @@ function searchPlayer() {
         var resolvedId = profile.PlayerId || id;
         var displayName = profile.DisplayName || 'Unknown';
 
-        // Auto-add to search index so display name search works going forward
-        api('index-player', { playFabId: resolvedId, displayName: displayName }).catch(function () { });
-
         setCurrentPlayer(resolvedId, displayName, profile.LastLogin, profile.Created, accountRes.data && accountRes.data.UserInfo);
         toast('Loaded ' + currentPlayer.displayName);
 
