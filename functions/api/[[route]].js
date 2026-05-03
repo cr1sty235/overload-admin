@@ -262,7 +262,10 @@ async function handleRoute(route, body, env) {
                 headers: { 'x-api-key': env.SEARCH_API_KEY || '' }
             });
 
-            if (!r.ok) return { code: 500, errorMessage: 'Search worker returned ' + r.status };
+            if (!r.ok) {
+                const errText = await r.text().catch(() => '(no body)');
+                return { code: 500, errorMessage: 'Search worker ' + r.status + ': ' + errText };
+            }
 
             const results = await r.json();
             return {
