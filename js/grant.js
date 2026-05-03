@@ -284,7 +284,8 @@ function executeGrant() {
     var items = Array.from(grantSelectedItems);
     var curCode = (document.getElementById('grant-cur-code').value || '').trim();
     var curAmt = parseInt(document.getElementById('grant-cur-amount').value || '0') || 0;
-    var cv = (document.getElementById('grant-catalog-version').value || '').trim();
+    var subject = (document.getElementById('grant-subject') && document.getElementById('grant-subject').value || '').trim() || 'You have a grant!';
+    var message = (document.getElementById('grant-message') && document.getElementById('grant-message').value || '').trim();
 
     if (!items.length && (!curCode || !curAmt)) {
         toast('Select at least one item or enter a currency amount', 'warn');
@@ -293,56 +294,52 @@ function executeGrant() {
 
     if (grantMode === 'single') {
         if (!grantSingleId) { toast('Select a player first', 'warn'); return; }
-        doGrant([grantSingleId], items, curCode, curAmt, cv);
+        doGrantViaMail([grantSingleId], items, curCode, curAmt, subject, message);
     }
 
     else if (grantMode === 'selected') {
         if (!grantRecipients.length) { toast('Add at least one player', 'warn'); return; }
-        doGrant(grantRecipients, items, curCode, curAmt, cv);
+        doGrantViaMail(grantRecipients, items, curCode, curAmt, subject, message);
     }
 
     else if (grantMode === 'online') {
         if (!grantOnlinePlayers.length) { toast('No online players loaded', 'warn'); return; }
-        if (!confirm('Grant to ' + grantOnlinePlayers.length + ' online player(s)?')) return;
-        doGrant(grantOnlinePlayers, items, curCode, curAmt, cv);
+        if (!confirm('Send grant mail to ' + grantOnlinePlayers.length + ' online player(s)?')) return;
+        doGrantViaMail(grantOnlinePlayers, items, curCode, curAmt, subject, message);
     }
 
     else if (grantMode === 'all') {
-        var subject = (document.getElementById('grant-all-subject').value || '').trim();
-        var message = (document.getElementById('grant-all-message').value || '').trim();
-        if (!subject) { toast('Enter a broadcast subject', 'warn'); return; }
-        if (!confirm('Broadcast to ALL players?')) return;
-        doGrantAll(subject, message, items, curCode, curAmt);
+        var allSubject = (document.getElementById('grant-all-subject').value || '').trim();
+        var allMessage = (document.getElementById('grant-all-message').value || '').trim();
+        if (!allSubject) { toast('Enter a broadcast subject', 'warn'); return; }
+        if (!confirm('Broadcast grant to ALL players?')) return;
+        doGrantAll(allSubject, allMessage, items, curCode, curAmt);
     }
 }
 
-// ── Grant to a list of players ─────────────────────────────────────────────
+// ── Send grant as mail — Unity client claims to actually receive items ──────
 
-function doGrant(recipients, items, curCode, curAmt, cv) {
+function doGrantViaMail(recipients, items, curCode, curAmt, subject, message) {
     var total = recipients.length;
     var done = 0;
     var failed = 0;
 
-    grantLog('Granting to ' + total + ' player(s)…', 'info');
+    grantLog('Sending grant mail to ' + total + ' player(s)…', 'info');
 
     recipients.forEach(function (p) {
-        var calls = [];
-
-        if (items.length) {
-            calls.push(api('grant-items', { playFabId: p.playFabId, itemIds: items, catalogVersion: cv }));
-        }
-
-        if (curCode && curAmt > 0) {
-            calls.push(api('add-currency', { playFabId: p.playFabId, currencyCode: curCode, amount: curAmt }));
-        }
-
-        Promise.all(calls).then(function (results) {
-            var allOk = results.every(function (r) { return r.code === 200; });
-            if (allOk) {
-                grantLog('✓ ' + p.displayName + ' (' + p.playFabId + ')', 'ok');
+        api('send-mail', {
+            playFabId: p.playFabId,
+            subject: subject,
+            body: message,
+            itemIds: items,
+            currencyCode: curCode,
+            currencyAmt: curAmt,
+        }).then(function (d) {
+            if (d.code === 200) {
+                grantLog('✓ Mail sent to ' + p.displayName + ' (' + p.playFabId + ')', 'ok');
             } else {
                 failed++;
-                grantLog('✗ ' + p.displayName + ': ' + (results.find(function (r) { return r.code !== 200; }) || {}).errorMessage, 'err');
+                grantLog('✗ ' + p.displayName + ': ' + (d.errorMessage || 'failed'), 'err');
             }
             done++;
             if (done === total) {

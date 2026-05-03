@@ -205,16 +205,20 @@
                     </div>
 
                     <div class="card">
+                        <div class="card-title">Mail Details</div>
+                        <div class="info-box">
+                            Items are sent as mail. Players must open their in-game inbox and hit <strong>Claim</strong> to actually receive them. They can close and reopen the inbox later — mail persists until claimed or deleted.
+                        </div>
+                        <div class="field" style="margin-top:10px"><label>Subject</label><input id="grant-subject" placeholder="e.g. Holiday Gift 🎁"></div>
+                        <div class="field"><label>Message (optional)</label><textarea id="grant-message" style="min-height:60px" placeholder="Happy holidays from the Overload team!"></textarea></div>
+                    </div>
+
+                    <div class="card">
                         <div class="card-title">Currency to Grant (optional)</div>
                         <div class="row-2">
                             <div class="field"><label>Currency Code</label><input id="grant-cur-code" placeholder="GD"></div>
                             <div class="field"><label>Amount</label><input id="grant-cur-amount" type="number" placeholder="0" min="0"></div>
                         </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-title">Catalog Version (optional)</div>
-                        <div class="field"><input id="grant-catalog-version" placeholder="(blank = default)"></div>
                     </div>
 
                     <div id="grant-summary" class="info-box" style="margin-bottom:12px"></div>
