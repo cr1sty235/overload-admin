@@ -33,7 +33,7 @@ function doLogout() {
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 
-var pageNames = ['players', 'catalog', 'grant', 'mail', 'announce', 'popup', 'panic'];
+var pageNames = ['players', 'catalog', 'compose', 'announce', 'popup', 'panic'];
 
 function showPage(name) {
     var tabs = document.querySelectorAll('.nav-tab');
@@ -47,8 +47,7 @@ function showPage(name) {
     }
 
     if (name === 'panic') loadPanicState();
-    if (name === 'mail') { loadSentHistory(); loadBroadcasts(); renderMailSection('compose'); }
+    if (name === 'compose') initComposePage();
     if (name === 'announce') loadAnnouncements();
     if (name === 'popup') loadCurrentPopup();
-    if (name === 'grant') initGrantPage();
 }

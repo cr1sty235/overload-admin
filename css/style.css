@@ -1255,7 +1255,114 @@ button {
         color: var(--accent);
     }
 
-/* ── Grant Page ── */
+/* ── Compose Page ── */
+.compose-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 260px;
+    height: 100%;
+    overflow: hidden;
+    gap: 0;
+}
+
+.compose-col {
+    overflow-y: auto;
+    padding: 16px;
+    border-right: 1px solid var(--border);
+}
+
+    .compose-col:last-child {
+        border-right: none;
+    }
+
+.compose-modes {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.cmode {
+    padding: 7px 11px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    transition: all 0.12s;
+    border: 1px solid transparent;
+    user-select: none;
+}
+
+    .cmode:hover {
+        background: var(--surface2);
+        color: var(--text);
+    }
+
+    .cmode.active {
+        background: var(--accent-d);
+        color: var(--text);
+        border-color: var(--accent);
+    }
+
+.compose-recipient-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 9px;
+    background: var(--surface2);
+    border-radius: 5px;
+    font-size: 12px;
+    margin-bottom: 3px;
+}
+
+    .compose-recipient-item .cr-name {
+        flex: 1;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .compose-recipient-item .cr-id {
+        font-size: 10px;
+        color: var(--muted);
+        font-family: monospace;
+    }
+
+.compose-result-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    background: var(--surface2);
+    border-radius: 5px;
+    font-size: 12px;
+    margin-bottom: 3px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+    .compose-result-item:hover {
+        background: var(--accent-d);
+    }
+
+.sent-history-item {
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: 6px;
+    margin-bottom: 5px;
+    font-size: 12px;
+}
+
+    .sent-history-item .sh-subject {
+        font-weight: 500;
+        margin-bottom: 2px;
+    }
+
+    .sent-history-item .sh-meta {
+        font-size: 10px;
+        color: var(--muted);
+    }
+
+/* ── Grant Page (keep for CSS refs) ── */
 .grant-layout {
     display: grid;
     grid-template-columns: 380px 1fr;

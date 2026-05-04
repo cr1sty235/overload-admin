@@ -161,7 +161,21 @@ async function handleRoute(route, body, env) {
         // ── Mail — single player ──
         case 'send-mail': {
             const mailKey = 'SystemMail';
-            const existing = await pfServer('GetUserData', { PlayFabId: body.playFabId, Keys: [mailKey] }, env);
+            let pfid = body.playFabId;
+
+            // Resolve display name → master player ID if input isn't a hex ID
+            if (pfid && !/^[0-9A-Fa-f]{12,20}$/.test(pfid)) {
+                const lookup = await pfAdmin('GetUserAccountInfo', { TitleDisplayName: pfid }, env).catch(() => null);
+                if (lookup?.code === 200 && lookup?.data?.UserInfo?.PlayFabId) {
+                    pfid = lookup.data.UserInfo.PlayFabId;
+                } else {
+                    return { code: 400, errorMessage: 'Could not resolve player: ' + body.playFabId };
+                }
+            }
+
+            if (!pfid) return { code: 400, errorMessage: 'Missing playFabId' };
+
+            const existing = await pfServer('GetUserData', { PlayFabId: pfid, Keys: [mailKey] }, env);
 
             let mailArr = [];
             try {
@@ -189,9 +203,9 @@ async function handleRoute(route, body, env) {
 
             const writeData = {};
             writeData[mailKey] = JSON.stringify(mailArr);
-            const result = await pfServer('UpdateUserData', { PlayFabId: body.playFabId, Data: writeData }, env);
+            const result = await pfServer('UpdateUserData', { PlayFabId: pfid, Data: writeData }, env);
 
-            await appendSentLog(env, { type: 'single', to: body.playFabId, subject: item.subject, sentAt: item.sentAt });
+            await appendSentLog(env, { type: 'single', to: pfid, subject: item.subject, sentAt: item.sentAt });
             return result;
         }
 
