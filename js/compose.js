@@ -155,8 +155,6 @@ function renderComposeRecipients() {
 
 // ── Online players ─────────────────────────────────────────────────────────
 
-var onlineFilter = 'online';
-
 function setOnlineFilter(filter) {
     onlineFilter = filter;
     var filters = ['online', 'offline', 'both'];
