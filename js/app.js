@@ -48,5 +48,4 @@ function showPage(name) {
     if (name === 'panic') loadPanicState();
     if (name === 'compose') initComposePage();
     if (name === 'announce') loadAnnouncements();
-    if (name === 'popup') loadCurrentPopup();
 }

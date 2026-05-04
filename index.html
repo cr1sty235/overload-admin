@@ -30,7 +30,6 @@
             <div class="nav-tab" onclick="showPage('catalog')">📦 Catalog</div>
             <div class="nav-tab" onclick="showPage('compose')">✉ Compose</div>
             <div class="nav-tab" onclick="showPage('announce')">📣 Announcements</div>
-            <div class="nav-tab" onclick="showPage('popup')">💬 Popups</div>
             <div class="spacer"></div>
             <div class="panic-nav-btn" id="panic-nav-btn" onclick="showPage('panic')">🚨 PANIC</div>
             <div class="sign-out" onclick="doLogout()">Sign Out</div>
@@ -186,7 +185,7 @@
                         <div class="search-bar" style="padding:0;margin-bottom:8px">
                             <input id="compose-item-search" placeholder="Search catalog…" oninput="filterComposeItems()">
                         </div>
-                        <div id="compose-item-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:200px;overflow-y:auto"></div>
+                        <div id="compose-item-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:340px;overflow-y:auto"></div>
                         <div class="card-title" style="margin-top:10px">
                             Attached (<span id="compose-items-count">0</span>)
                             <button class="btn-ghost btn-sm" onclick="clearComposeItems()">Clear</button>
@@ -258,28 +257,6 @@
         </div>
 
         <!-- Popups -->
-        <div class="page" id="page-popup">
-            <div class="single-column-page">
-                <div class="card">
-                    <div class="card-title">Send In-Game Popup</div>
-                    <div class="info-box">Clients poll PlayFab Title Data for the ActivePopup key. When a new popup is detected they show it on screen.</div>
-                    <div class="field">
-                        <label>Popup Message</label>
-                        <input id="popup-msg" placeholder="e.g. New update available! Restart to play." oninput="updatePopupPreview()">
-                    </div>
-                    <div class="popup-preview" id="popup-preview">Your message will appear here</div>
-                    <div class="btn-row" style="margin-top:14px">
-                        <button class="btn-success" onclick="sendPopup()">📤 Send to All Players</button>
-                        <button class="btn-ghost" onclick="clearPopup()">✕ Clear Active Popup</button>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Current Active Popup <button class="btn-ghost btn-sm" onclick="loadCurrentPopup()">↻ Refresh</button></div>
-                    <div id="current-popup"><div class="empty">Loading…</div></div>
-                </div>
-            </div>
-        </div>
-
         <!-- Panic -->
         <div class="page" id="page-panic">
             <div class="panic-page">
@@ -313,7 +290,6 @@
     <script src="js/catalog.js"></script>
     <script src="js/compose.js"></script>
     <script src="js/announcements.js"></script>
-    <script src="js/popups.js"></script>
     <script src="js/panic.js"></script>
 
 </body>
