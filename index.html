@@ -224,206 +224,84 @@
         </div>
 
 
-        <div class="grant-layout">
-
-            <!-- Left: Recipients -->
-            <div class="grant-left">
-                <div class="card">
-                    <div class="card-title">Recipients</div>
-
-                    <!-- Mode selector -->
-                    <div class="grant-modes">
-                        <div class="grant-mode active" id="gmode-single" onclick="setGrantMode('single')">👤 Single Player</div>
-                        <div class="grant-mode" id="gmode-selected" onclick="setGrantMode('selected')">👥 Selected Players</div>
-                        <div class="grant-mode" id="gmode-online" onclick="setGrantMode('online')">🟢 Online Players</div>
-                        <div class="grant-mode" id="gmode-all" onclick="setGrantMode('all')">🌍 All Players (Broadcast)</div>
-                    </div>
-
-                    <!-- Single player search -->
-                    <div id="grant-single-panel">
-                        <div class="field" style="margin-top:12px">
-                            <label>Search Player</label>
-                            <div class="search-bar" style="padding:0">
-                                <input id="grant-single-search" placeholder="Display name or ID…" onkeydown="if(event.key==='Enter') grantSearchSingle()">
-                                <button class="btn-ghost btn-sm" onclick="grantSearchSingle()">🔍</button>
-                            </div>
-                        </div>
-                        <div id="grant-single-result"></div>
-                    </div>
-
-                    <!-- Selected players -->
-                    <div id="grant-selected-panel" style="display:none">
-                        <div class="field" style="margin-top:12px">
-                            <label>Search & Add Players</label>
-                            <div class="search-bar" style="padding:0">
-                                <input id="grant-multi-search" placeholder="Display name or ID…" onkeydown="if(event.key==='Enter') grantSearchMulti()">
-                                <button class="btn-ghost btn-sm" onclick="grantSearchMulti()">🔍</button>
-                            </div>
-                        </div>
-                        <div id="grant-multi-results"></div>
-                        <div class="card-title" style="margin-top:12px">
-                            Selected (<span id="grant-selected-count">0</span>)
-                            <button class="btn-ghost btn-sm" onclick="clearGrantRecipients()">Clear</button>
-                        </div>
-                        <div id="grant-recipients-list"><div class="empty">No players selected</div></div>
-                    </div>
-
-                    <!-- Online players -->
-                    <div id="grant-online-panel" style="display:none">
-                        <div style="margin-top:12px">
-                            <div class="info-box">
-                                Reads the <code>OnlinePlayers</code> TitleData key — updated by Unity clients every 60s.
-                                Requires the heartbeat system to be implemented in Unity.
-                            </div>
-                            <button class="btn-ghost" style="width:100%;margin-top:8px" onclick="loadOnlinePlayers()">↻ Refresh Online Players</button>
-                            <div id="grant-online-list" style="margin-top:10px"><div class="empty">Click refresh to load</div></div>
-                        </div>
-                    </div>
-
-                    <!-- All players -->
-                    <div id="grant-all-panel" style="display:none">
-                        <div class="info-box" style="margin-top:12px">
-                            Sends a broadcast mail with the items/currency attached. Players receive it in their in-game inbox and claim it themselves.
-                        </div>
-                        <div class="field" style="margin-top:10px">
-                            <label>Broadcast Subject</label>
-                            <input id="grant-all-subject" placeholder="e.g. Holiday Gift 🎁">
+        <div class="page" id="page-announce">
+            <div class="announce-layout">
+                <div class="announce-composer">
+                    <div class="card">
+                        <div class="card-title">New Announcement / Patch Notes</div>
+                        <div class="field"><label>Title</label><input id="ann-title" placeholder="e.g. v1.2.0 Patch Notes"></div>
+                        <div class="field">
+                            <label>Type</label>
+                            <select id="ann-type">
+                                <option value="Announcement">Announcement</option>
+                                <option value="PatchNotes">Patch Notes</option>
+                            </select>
                         </div>
                         <div class="field">
-                            <label>Message (optional)</label>
-                            <textarea id="grant-all-message" style="min-height:60px" placeholder="Happy holidays from the team!"></textarea>
+                            <label>Body</label>
+                            <textarea id="ann-body" style="min-height:220px" placeholder="Write your announcement here…"></textarea>
                         </div>
+                        <div class="field">
+                            <label>Image URL (optional — host on Imgur, R2, etc.)</label>
+                            <input id="ann-img" placeholder="https://…">
+                        </div>
+                        <button class="btn-success" onclick="postAnnouncement()">Post</button>
+                    </div>
+                </div>
+                <div class="announce-list-panel">
+                    <div class="card">
+                        <div class="card-title">Published <button class="btn-ghost btn-sm" onclick="loadAnnouncements()">↻ Refresh</button></div>
+                        <div id="ann-list"><div class="empty">Loading…</div></div>
                     </div>
                 </div>
             </div>
-
-            <!-- Right: Items + Currency + Grant button -->
-            <div class="grant-right">
-                <div class="card">
-                    <div class="card-title">Items to Grant</div>
-                    <div class="search-bar" style="padding:0;margin-bottom:10px">
-                        <input id="grant-item-search" placeholder="Search catalog…" oninput="filterGrantCatalog()">
-                    </div>
-                    <div class="grant-catalog-grid" id="grant-catalog-grid">
-                        <div class="empty">Loading catalog…</div>
-                    </div>
-                    <div class="card-title" style="margin-top:10px">
-                        Selected Items (<span id="grant-items-count">0</span>)
-                        <button class="btn-ghost btn-sm" onclick="clearGrantItems()">Clear</button>
-                    </div>
-                    <div id="grant-selected-items"><div class="empty" style="padding:10px">No items selected</div></div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">Mail Details</div>
-                    <div class="info-box">
-                        Items are sent as mail. Players must open their in-game inbox and hit <strong>Claim</strong> to actually receive them. They can close and reopen the inbox later — mail persists until claimed or deleted.
-                    </div>
-                    <div class="field" style="margin-top:10px"><label>Subject</label><input id="grant-subject" placeholder="e.g. Holiday Gift 🎁"></div>
-                    <div class="field"><label>Message (optional)</label><textarea id="grant-message" style="min-height:60px" placeholder="Happy holidays from the Overload team!"></textarea></div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title">Currency to Grant (optional)</div>
-                    <div class="row-2">
-                        <div class="field"><label>Currency Code</label><input id="grant-cur-code" placeholder="GD"></div>
-                        <div class="field"><label>Amount</label><input id="grant-cur-amount" type="number" placeholder="0" min="0"></div>
-                    </div>
-                </div>
-
-                <div id="grant-summary" class="info-box" style="margin-bottom:12px"></div>
-                <button class="btn-success" style="width:100%;padding:14px;font-size:15px;font-weight:700" onclick="executeGrant()">
-                    🎁 Grant Now
-                </button>
-
-                <div class="card" style="margin-top:12px">
-                    <div class="card-title">Grant Log</div>
-                    <div class="action-log" id="grant-log"><span class="info">Ready.</span></div>
-                </div>
-            </div>
-
         </div>
-    </div>
 
-
-    <div class="page" id="page-announce">
-        <div class="announce-layout">
-            <div class="announce-composer">
+        <!-- Popups -->
+        <div class="page" id="page-popup">
+            <div class="single-column-page">
                 <div class="card">
-                    <div class="card-title">New Announcement / Patch Notes</div>
-                    <div class="field"><label>Title</label><input id="ann-title" placeholder="e.g. v1.2.0 Patch Notes"></div>
+                    <div class="card-title">Send In-Game Popup</div>
+                    <div class="info-box">Clients poll PlayFab Title Data for the ActivePopup key. When a new popup is detected they show it on screen.</div>
                     <div class="field">
-                        <label>Type</label>
-                        <select id="ann-type">
-                            <option value="Announcement">Announcement</option>
-                            <option value="PatchNotes">Patch Notes</option>
-                        </select>
+                        <label>Popup Message</label>
+                        <input id="popup-msg" placeholder="e.g. New update available! Restart to play." oninput="updatePopupPreview()">
                     </div>
-                    <div class="field">
-                        <label>Body</label>
-                        <textarea id="ann-body" style="min-height:220px" placeholder="Write your announcement here…"></textarea>
+                    <div class="popup-preview" id="popup-preview">Your message will appear here</div>
+                    <div class="btn-row" style="margin-top:14px">
+                        <button class="btn-success" onclick="sendPopup()">📤 Send to All Players</button>
+                        <button class="btn-ghost" onclick="clearPopup()">✕ Clear Active Popup</button>
                     </div>
-                    <div class="field">
-                        <label>Image URL (optional — host on Imgur, R2, etc.)</label>
-                        <input id="ann-img" placeholder="https://…">
-                    </div>
-                    <button class="btn-success" onclick="postAnnouncement()">Post</button>
                 </div>
-            </div>
-            <div class="announce-list-panel">
                 <div class="card">
-                    <div class="card-title">Published <button class="btn-ghost btn-sm" onclick="loadAnnouncements()">↻ Refresh</button></div>
-                    <div id="ann-list"><div class="empty">Loading…</div></div>
+                    <div class="card-title">Current Active Popup <button class="btn-ghost btn-sm" onclick="loadCurrentPopup()">↻ Refresh</button></div>
+                    <div id="current-popup"><div class="empty">Loading…</div></div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Popups -->
-    <div class="page" id="page-popup">
-        <div class="single-column-page">
-            <div class="card">
-                <div class="card-title">Send In-Game Popup</div>
-                <div class="info-box">Clients poll PlayFab Title Data for the ActivePopup key. When a new popup is detected they show it on screen.</div>
-                <div class="field">
-                    <label>Popup Message</label>
-                    <input id="popup-msg" placeholder="e.g. New update available! Restart to play." oninput="updatePopupPreview()">
+        <!-- Panic -->
+        <div class="page" id="page-panic">
+            <div class="panic-page">
+                <div class="panic-card" id="panic-card">
+                    <h2>🚨 Panic Shutdown</h2>
+                    <p>When enabled, all clients check this flag and disconnect immediately. Use only in an emergency — all players in active games will be kicked.</p>
+                    <div class="panic-status" id="panic-status">Loading…</div>
+                    <button class="panic-toggle-btn" id="panic-toggle-btn" onclick="togglePanic()">Enable Panic Shutdown</button>
+                    <div class="panic-sub" id="panic-sub">Fetching current state…</div>
                 </div>
-                <div class="popup-preview" id="popup-preview">Your message will appear here</div>
-                <div class="btn-row" style="margin-top:14px">
-                    <button class="btn-success" onclick="sendPopup()">📤 Send to All Players</button>
-                    <button class="btn-ghost" onclick="clearPopup()">✕ Clear Active Popup</button>
-                </div>
-            </div>
-            <div class="card">
-                <div class="card-title">Current Active Popup <button class="btn-ghost btn-sm" onclick="loadCurrentPopup()">↻ Refresh</button></div>
-                <div id="current-popup"><div class="empty">Loading…</div></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Panic -->
-    <div class="page" id="page-panic">
-        <div class="panic-page">
-            <div class="panic-card" id="panic-card">
-                <h2>🚨 Panic Shutdown</h2>
-                <p>When enabled, all clients check this flag and disconnect immediately. Use only in an emergency — all players in active games will be kicked.</p>
-                <div class="panic-status" id="panic-status">Loading…</div>
-                <button class="panic-toggle-btn" id="panic-toggle-btn" onclick="togglePanic()">Enable Panic Shutdown</button>
-                <div class="panic-sub" id="panic-sub">Fetching current state…</div>
-            </div>
-            <div class="card panic-info-card">
-                <div class="card-title">What this does</div>
-                <div class="panic-info-list">
-                    <div>✓ Sets <code>PanicShutdown = true</code> in PlayFab Title Data</div>
-                    <div>✓ All Unity clients poll this key every 30 seconds</div>
-                    <div>✓ On detection: force disconnect + show maintenance screen</div>
-                    <div>✓ New clients that try to login are also blocked</div>
-                    <div>✓ Disable here when ready to restore service</div>
+                <div class="card panic-info-card">
+                    <div class="card-title">What this does</div>
+                    <div class="panic-info-list">
+                        <div>✓ Sets <code>PanicShutdown = true</code> in PlayFab Title Data</div>
+                        <div>✓ All Unity clients poll this key every 30 seconds</div>
+                        <div>✓ On detection: force disconnect + show maintenance screen</div>
+                        <div>✓ New clients that try to login are also blocked</div>
+                        <div>✓ Disable here when ready to restore service</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
     </div><!-- end app -->
 
