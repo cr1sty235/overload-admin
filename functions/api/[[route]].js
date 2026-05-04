@@ -312,15 +312,48 @@ async function handleRoute(route, body, env) {
             return { code: 200, data: players };
         }
 
-        case 'add-announcement':
-            return pfAdmin('AddNews', {
-                Title: body.title || '(No title)',
-                Body: body.body || '',
-                Timestamp: new Date().toISOString(),
-            }, env);
+        case 'add-announcement': {
+            // Store patch notes in TitleData as a JSON array
+            const r = await pfAdmin('GetTitleData', { Keys: ['PatchNotes'] }, env);
+            let notes = [];
+            try {
+                const raw = r.data?.Data?.PatchNotes;
+                if (raw) notes = JSON.parse(raw);
+            } catch (e) { notes = []; }
 
-        case 'get-announcements':
-            return pfAdmin('GetTitleNews', { Count: 50 }, env);
+            notes.unshift({
+                id: Date.now().toString(),
+                title: body.title || '(No title)',
+                body: body.body || '',
+                imageUrl: body.imageUrl || '',
+                postedAt: new Date().toISOString(),
+            });
+
+            if (notes.length > 50) notes = notes.slice(0, 50);
+
+            return pfAdmin('SetTitleData', { Key: 'PatchNotes', Value: JSON.stringify(notes) }, env);
+        }
+
+        case 'get-announcements': {
+            const r = await pfAdmin('GetTitleData', { Keys: ['PatchNotes'] }, env);
+            let notes = [];
+            try {
+                const raw = r.data?.Data?.PatchNotes;
+                if (raw) notes = JSON.parse(raw);
+            } catch (e) { notes = []; }
+            return { code: 200, data: notes };
+        }
+
+        case 'delete-announcement': {
+            const r = await pfAdmin('GetTitleData', { Keys: ['PatchNotes'] }, env);
+            let notes = [];
+            try {
+                const raw = r.data?.Data?.PatchNotes;
+                if (raw) notes = JSON.parse(raw);
+            } catch (e) { notes = []; }
+            notes = notes.filter(n => n.id !== body.id);
+            return pfAdmin('SetTitleData', { Key: 'PatchNotes', Value: JSON.stringify(notes) }, env);
+        }
 
         // ── Popups ──
         case 'send-popup': {
@@ -368,6 +401,7 @@ async function appendSentLog(env, entry) {
 
 async function pfAdmin(endpoint, body, env) { return pfCall('Admin', endpoint, body, env); }
 async function pfServer(endpoint, body, env) { return pfCall('Server', endpoint, body, env); }
+async function pfClient(endpoint, body, env) { return pfCall('Client', endpoint, body, env); }
 
 async function pfCall(api, endpoint, body, env) {
     const r = await fetch(

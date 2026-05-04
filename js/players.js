@@ -42,8 +42,14 @@ function setCurrentPlayer(pfid, displayName, lastLogin, created, account) {
 }
 
 function loadPlayer(pfid) {
-    document.getElementById('player-search').value = pfid;
-    searchPlayer();
+    api('lookup-player', { playFabId: pfid }).then(function (d) {
+        var profile = d.data && d.data.PlayerProfile;
+        if (!profile) { toast('Player not found', 'err'); return; }
+        var resolvedId = profile.PlayerId || pfid;
+        var displayName = profile.DisplayName || 'Unknown';
+        setCurrentPlayer(resolvedId, displayName, profile.LastLogin, profile.Created, null);
+        toast('Loaded ' + displayName);
+    }).catch(function (e) { toast(e.message, 'err'); });
 }
 
 // ── Render player list ─────────────────────────────────────────────────────
