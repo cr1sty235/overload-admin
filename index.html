@@ -27,9 +27,8 @@
         <nav>
             <div class="logo">⚡ Overload</div>
             <div class="nav-tab active" onclick="showPage('players')">👤 Players</div>
-            <div class="nav-tab" onclick="showPage('catalog')">📦 Catalog</div>
             <div class="nav-tab" onclick="showPage('compose')">✉ Compose</div>
-            <div class="nav-tab" onclick="showPage('announce')">📣 Announcements</div>
+            <div class="nav-tab" onclick="showPage('announce')">📋 Patch Notes</div>
             <div class="spacer"></div>
             <div class="panic-nav-btn" id="panic-nav-btn" onclick="showPage('panic')">🚨 PANIC</div>
             <div class="sign-out" onclick="doLogout()">Sign Out</div>
@@ -40,12 +39,8 @@
             <div class="pane-layout">
                 <div class="left-pane">
                     <div class="search-bar">
-                        <input id="player-search" placeholder="Master Player ID…" onkeydown="if(event.key==='Enter') searchPlayer()">
-                        <button class="btn-primary btn-sm" onclick="searchPlayer()">Go</button>
-                    </div>
-                    <div class="search-bar" style="border-top:none;padding-top:0">
                         <input id="name-search" placeholder="Search by display name…" onkeydown="if(event.key==='Enter') searchByName()">
-                        <button class="btn-ghost btn-sm" onclick="searchByName()">🔍</button>
+                        <button class="btn-primary btn-sm" onclick="searchByName()">🔍</button>
                     </div>
                     <div class="section-label">RESULTS</div>
                     <div class="list" id="player-list">
@@ -63,40 +58,6 @@
             </div>
         </div>
 
-        <!-- Catalog -->
-        <div class="page" id="page-catalog">
-            <div class="catalog-layout">
-                <div class="catalog-sidebar">
-                    <h3>Filter by Type</h3>
-                    <div class="cat-filter active" onclick="setCatalogFilter('all')">All Items    <span class="count" id="cnt-all">0</span></div>
-                    <div class="cat-filter" onclick="setCatalogFilter('skin')">Skins        <span class="count" id="cnt-skin">0</span></div>
-                    <div class="cat-filter" onclick="setCatalogFilter('wrap')">Wraps        <span class="count" id="cnt-wrap">0</span></div>
-                    <div class="cat-filter" onclick="setCatalogFilter('charm')">Charms      <span class="count" id="cnt-charm">0</span></div>
-                    <div class="cat-filter" onclick="setCatalogFilter('crate')">Crates      <span class="count" id="cnt-crate">0</span></div>
-                    <div class="cat-filter" onclick="setCatalogFilter('other')">Other       <span class="count" id="cnt-other">0</span></div>
-                    <div class="divider"></div>
-                    <h3>Grant Selected To</h3>
-                    <div class="field"><label>PlayFab ID</label><input id="cat-pfid" placeholder="Player ID"></div>
-                    <div class="field"><label>Catalog Version</label><input id="cat-ver" placeholder="(blank = default)"></div>
-                    <div class="catalog-grant-footer">
-                        <button class="btn-success" onclick="grantSelected()">Grant Selected</button>
-                        <button class="btn-ghost" onclick="clearSelection()">Clear</button>
-                        <div id="selection-label" class="selection-label"></div>
-                    </div>
-                </div>
-                <div class="catalog-main">
-                    <div class="catalog-toolbar">
-                        <input id="catalog-search" placeholder="Search items…" oninput="filterCatalog()">
-                        <button class="btn-ghost btn-sm" onclick="loadCatalog()">↻ Refresh</button>
-                    </div>
-                    <div class="catalog-grid" id="catalog-items">
-                        <div class="empty" style="grid-column:1/-1">Loading catalog…</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Mail -->
         <!-- ── Compose (unified Mail + Grant + Announcement) ── -->
         <div class="page" id="page-compose">
             <div class="compose-layout">
@@ -106,7 +67,6 @@
                     <div class="card" style="height:100%;display:flex;flex-direction:column">
                         <div class="card-title">Recipients</div>
 
-                        <!-- Mode pills -->
                         <div class="compose-modes">
                             <div class="cmode active" id="cmode-search" onclick="setComposeMode('search')">👤 By Name</div>
                             <div class="cmode" id="cmode-online" onclick="setComposeMode('online')">🟢 Online</div>
@@ -131,8 +91,8 @@
                             <div class="field" style="margin-top:8px">
                                 <label>Filter</label>
                                 <div class="compose-modes" style="flex-direction:row">
-                                    <div class="cmode active" id="online-filter-online" onclick="setOnlineFilter('online')">🟢 Online only</div>
-                                    <div class="cmode" id="online-filter-offline" onclick="setOnlineFilter('offline')">⚫ Offline only</div>
+                                    <div class="cmode active" id="online-filter-online" onclick="setOnlineFilter('online')">🟢 Online</div>
+                                    <div class="cmode" id="online-filter-offline" onclick="setOnlineFilter('offline')">⚫ Offline</div>
                                     <div class="cmode" id="online-filter-both" onclick="setOnlineFilter('both')">All</div>
                                 </div>
                             </div>
@@ -142,10 +102,10 @@
 
                         <!-- All players panel -->
                         <div id="cmode-all-panel" style="display:none;margin-top:10px">
-                            <div class="success-box">Mail will be sent as a broadcast. Every player sees it in their inbox and can claim attached items.</div>
+                            <div class="success-box">Mail sent as broadcast — every player sees it in their inbox.</div>
                         </div>
 
-                        <!-- Selected recipients list -->
+                        <!-- Selected list -->
                         <div style="margin-top:12px;flex:1;overflow:hidden;display:flex;flex-direction:column">
                             <div class="card-title">
                                 Selected
@@ -159,75 +119,73 @@
                     </div>
                 </div>
 
-                <!-- Col 2: Message -->
+                <!-- Col 2: Everything else -->
                 <div class="compose-col compose-message-col">
-                    <div class="card">
-                        <div class="card-title">Message Type</div>
-                        <div class="compose-modes" style="flex-direction:row;flex-wrap:wrap">
-                            <div class="cmode active" id="mtype-mail" onclick="setMessageType('mail')">✉ Mail</div>
-                            <div class="cmode" id="mtype-grant" onclick="setMessageType('grant')">🎁 Grant (with items)</div>
-                            <div class="cmode" id="mtype-announcement" onclick="setMessageType('announcement')">📣 Announcement</div>
+
+                    <!-- Top row: message type + subject/body side by side with items -->
+                    <div class="compose-main-grid">
+
+                        <!-- Left: message -->
+                        <div>
+                            <div class="card">
+                                <div class="card-title">Type</div>
+                                <div class="compose-modes" style="flex-direction:row;flex-wrap:wrap;gap:4px">
+                                    <div class="cmode active" id="mtype-mail" onclick="setMessageType('mail')">✉ Mail</div>
+                                    <div class="cmode" id="mtype-grant" onclick="setMessageType('grant')">🎁 Grant</div>
+                                    <div class="cmode" id="mtype-announcement" onclick="setMessageType('announcement')">📣 Announcement</div>
+                                </div>
+                            </div>
+                            <div class="card">
+                                <div class="card-title">Message</div>
+                                <div class="field"><label>Subject</label><input id="compose-subject" placeholder="Subject line…"></div>
+                                <div class="field"><label>Body</label><textarea id="compose-body" style="min-height:120px" placeholder="Write your message…"></textarea></div>
+                                <div class="row-2">
+                                    <div class="field"><label>Currency Code</label><input id="compose-cur-code" placeholder="GD"></div>
+                                    <div class="field"><label>Amount</label><input id="compose-cur-amount" type="number" placeholder="0" min="0"></div>
+                                </div>
+                            </div>
                         </div>
-                        <div id="mtype-announcement-note" style="display:none;margin-top:8px">
-                            <div class="info-box">Announcement popups appear on all players' screens immediately. Not stored in mail unless recipients are selected.</div>
+
+                        <!-- Right: item catalog (shown when Grant selected) -->
+                        <div class="card" id="compose-attachments-card" style="display:none;overflow:hidden;display:flex;flex-direction:column">
+                            <div class="card-title">Attach Items</div>
+                            <div class="search-bar" style="padding:0;margin-bottom:8px">
+                                <input id="compose-item-search" placeholder="Search catalog…" oninput="filterComposeItems()">
+                            </div>
+                            <div id="compose-item-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:5px;flex:1;overflow-y:auto;min-height:200px;max-height:400px"></div>
+                            <div class="card-title" style="margin-top:8px">
+                                Attached (<span id="compose-items-count">0</span>)
+                                <button class="btn-ghost btn-sm" onclick="clearComposeItems()">Clear</button>
+                            </div>
+                            <div id="compose-attached-items" style="max-height:100px;overflow-y:auto"><div class="empty" style="padding:8px">None</div></div>
                         </div>
+
                     </div>
 
-                    <div class="card">
-                        <div class="card-title">Compose</div>
-                        <div class="field"><label>Subject</label><input id="compose-subject" placeholder="Subject line…"></div>
-                        <div class="field"><label>Body</label><textarea id="compose-body" style="min-height:140px" placeholder="Write your message…"></textarea></div>
-                    </div>
-
-                    <!-- Attachments (shown for grant type) -->
-                    <div class="card" id="compose-attachments-card" style="display:none">
-                        <div class="card-title">Attach Items</div>
-                        <div class="search-bar" style="padding:0;margin-bottom:8px">
-                            <input id="compose-item-search" placeholder="Search catalog…" oninput="filterComposeItems()">
-                        </div>
-                        <div id="compose-item-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:340px;overflow-y:auto"></div>
-                        <div class="card-title" style="margin-top:10px">
-                            Attached (<span id="compose-items-count">0</span>)
-                            <button class="btn-ghost btn-sm" onclick="clearComposeItems()">Clear</button>
-                        </div>
-                        <div id="compose-attached-items"><div class="empty" style="padding:8px">None</div></div>
-                        <div class="divider"></div>
-                        <div class="card-title">Currency</div>
-                        <div class="row-2">
-                            <div class="field"><label>Code</label><input id="compose-cur-code" placeholder="GD"></div>
-                            <div class="field"><label>Amount</label><input id="compose-cur-amount" type="number" placeholder="0" min="0"></div>
-                        </div>
-                    </div>
-
-                    <!-- Send -->
-                    <div id="compose-summary" class="info-box" style="margin-bottom:10px"></div>
-                    <button class="btn-success" style="width:100%;padding:13px;font-size:15px;font-weight:700" onclick="executeSend()">
-                        Send
-                    </button>
+                    <!-- Send + log + history -->
+                    <div id="compose-summary" class="info-box" style="margin:10px 0"></div>
+                    <button class="btn-success" style="width:100%;padding:13px;font-size:15px;font-weight:700" onclick="executeSend()">Send</button>
 
                     <div class="card" style="margin-top:12px">
                         <div class="card-title">Send Log</div>
                         <div class="action-log" id="compose-log"><span class="info">Ready.</span></div>
                     </div>
-                </div>
 
-                <!-- Col 3: Sent History -->
-                <div class="compose-col compose-history-col">
-                    <div class="card" style="height:100%;display:flex;flex-direction:column">
+                    <div class="card" style="margin-top:12px">
                         <div class="card-title">Sent History <button class="btn-ghost btn-sm" onclick="loadComposeSentHistory()">↻</button></div>
-                        <div id="compose-sent-history" style="flex:1;overflow-y:auto"><div class="empty">Loading…</div></div>
+                        <div id="compose-sent-history"><div class="empty">Loading…</div></div>
                     </div>
+
                 </div>
 
             </div>
         </div>
 
-
         <div class="page" id="page-announce">
             <div class="announce-layout">
                 <div class="announce-composer">
                     <div class="card">
-                        <div class="card-title">New Announcement / Patch Notes</div>
+                        <div class="card-title">New Patch Notes</div>
                         <div class="field"><label>Title</label><input id="ann-title" placeholder="e.g. v1.2.0 Patch Notes"></div>
                         <div class="field">
                             <label>Type</label>
@@ -287,7 +245,6 @@
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
     <script src="js/players.js"></script>
-    <script src="js/catalog.js"></script>
     <script src="js/compose.js"></script>
     <script src="js/announcements.js"></script>
     <script src="js/panic.js"></script>

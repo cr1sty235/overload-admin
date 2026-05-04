@@ -5,32 +5,7 @@ var allInventory = [];
 var inventoryFilter = 'all';
 var inventorySearch = '';
 
-// ── Search by ID ───────────────────────────────────────────────────────────
-
-function searchPlayer() {
-    var id = document.getElementById('player-search').value.trim();
-    if (!id) return;
-
-    Promise.all([
-        api('lookup-player', { playFabId: id }),
-        api('get-account', { playFabId: id }),
-    ]).then(function (results) {
-        var profileRes = results[0];
-        var accountRes = results[1];
-
-        var profile = profileRes.data && profileRes.data.PlayerProfile;
-        if (!profile) { toast('Player not found', 'err'); return; }
-
-        var resolvedId = profile.PlayerId || id;
-        var displayName = profile.DisplayName || 'Unknown';
-
-        setCurrentPlayer(resolvedId, displayName, profile.LastLogin, profile.Created, accountRes.data && accountRes.data.UserInfo);
-        toast('Loaded ' + currentPlayer.displayName);
-
-    }).catch(function (e) { toast(e.message, 'err'); });
-}
-
-// ── Search by display name (via segment) ───────────────────────────────────
+// ── Search by display name ─────────────────────────────────────────────────
 
 function searchByName() {
     var query = document.getElementById('name-search').value.trim();
@@ -45,13 +20,11 @@ function searchByName() {
                 el.innerHTML = '<div class="empty">' + escapeHtml(d.errorMessage || 'Search failed') + '</div>';
                 return;
             }
-
             var results = d.data || [];
             if (!results.length) {
                 el.innerHTML = '<div class="empty">No players found matching "' + escapeHtml(query) + '"</div>';
                 return;
             }
-
             renderPlayerList(results);
         })
         .catch(function (e) {

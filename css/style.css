@@ -1258,7 +1258,7 @@ button {
 /* ── Compose Page ── */
 .compose-layout {
     display: grid;
-    grid-template-columns: 260px 1fr 220px;
+    grid-template-columns: 240px 1fr;
     height: 100%;
     overflow: hidden;
     gap: 0;
@@ -1273,6 +1273,14 @@ button {
     .compose-col:last-child {
         border-right: none;
     }
+
+/* Inner grid inside the message column — message left, items right */
+.compose-main-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 12px;
+    margin-bottom: 0;
+}
 
 .compose-modes {
     display: flex;

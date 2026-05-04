@@ -18,7 +18,6 @@ function doLogin() {
             document.getElementById('app').style.display = 'flex';
 
             // Initial loads
-            loadCatalog();
             loadPanicState();
         });
 }
