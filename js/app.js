@@ -33,18 +33,17 @@ function doLogout() {
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 
-var pageNames = ['players', 'catalog', 'compose', 'announce', 'popup', 'panic'];
-
 function showPage(name) {
-    var tabs = document.querySelectorAll('.nav-tab');
-    for (var i = 0; i < tabs.length; i++) {
-        tabs[i].classList.toggle('active', pageNames[i] === name);
-    }
+    // Match each nav tab by its own onclick value, not by index position.
+    // This is safe even if the panic button or other non-tab elements are in the nav.
+    document.querySelectorAll('.nav-tab').forEach(function (t) {
+        var onclick = t.getAttribute('onclick') || '';
+        t.classList.toggle('active', onclick.indexOf("'" + name + "'") > -1);
+    });
 
-    var pages = document.querySelectorAll('.page');
-    for (var j = 0; j < pages.length; j++) {
-        pages[j].classList.toggle('active', pages[j].id === 'page-' + name);
-    }
+    document.querySelectorAll('.page').forEach(function (p) {
+        p.classList.toggle('active', p.id === 'page-' + name);
+    });
 
     if (name === 'panic') loadPanicState();
     if (name === 'compose') initComposePage();
