@@ -294,22 +294,41 @@ async function handleRoute(route, body, env) {
         // ── Index a player into the D1 search database ──
         // Called automatically after every successful player lookup by ID.
         // ── Online Players ──
-        // Reads the OnlinePlayers TitleData key written by Unity clients via heartbeat.
-        // Format: { "masterPlayFabId": "displayName", ... }
-        // Unity writes this on login and every 60s, removes itself on disconnect.
+        // Reads OnlinePlayers TitleData and filters out stale entries.
+        // Each entry is { displayName, lastSeen } — anyone not seen within
+        // 3× the heartbeat interval (3 × 60s = 180s) is considered offline.
         case 'get-online-players': {
             const r = await pfAdmin('GetTitleData', { Keys: ['OnlinePlayers'] }, env);
-            let players = [];
+            const players = [];
+            const staleCutoffMs = 3 * 60 * 1000; // 3 minutes
+            const now = Date.now();
+
             try {
                 const raw = r.data?.Data?.OnlinePlayers;
                 if (raw) {
                     const map = JSON.parse(raw);
-                    players = Object.entries(map).map(([pfid, name]) => ({
-                        playFabId: pfid,
-                        displayName: name,
-                    }));
+                    for (const [pfid, entry] of Object.entries(map)) {
+                        // Support both old format (string) and new format ({ displayName, lastSeen })
+                        if (typeof entry === 'string') {
+                            players.push({ playFabId: pfid, displayName: entry, stale: false });
+                            continue;
+                        }
+
+                        const lastSeen = entry.lastSeen ? new Date(entry.lastSeen).getTime() : 0;
+                        const ageMs = now - lastSeen;
+
+                        if (ageMs <= staleCutoffMs) {
+                            players.push({
+                                playFabId: pfid,
+                                displayName: entry.displayName || pfid,
+                                lastSeen: entry.lastSeen,
+                            });
+                        }
+                        // silently drop stale entries
+                    }
                 }
-            } catch (e) { players = []; }
+            } catch (e) { /* malformed JSON — return empty */ }
+
             return { code: 200, data: players };
         }
 
