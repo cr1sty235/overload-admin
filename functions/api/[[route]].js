@@ -189,6 +189,7 @@ async function handleRoute(route, body, env) {
                 body: body.body || '',
                 from: 'Admin',
                 sentAt: new Date().toISOString(),
+                read: false,
                 claimed: false,
                 deleted: false,
                 grants: {
