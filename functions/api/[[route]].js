@@ -204,6 +204,7 @@ async function handleRoute(route, body, env) {
 
             const writeData = {};
             writeData[mailKey] = JSON.stringify(mailArr);
+            writeData['SystemMailLastUpdated'] = item.sentAt;
             const result = await pfServer('UpdateUserData', { PlayFabId: pfid, Data: writeData }, env);
 
             await appendSentLog(env, { type: 'single', to: pfid, subject: item.subject, sentAt: item.sentAt });
@@ -237,7 +238,8 @@ async function handleRoute(route, body, env) {
             broadcasts.unshift(item);
             if (broadcasts.length > 20) broadcasts = broadcasts.slice(0, 20);
 
-            const result = await pfAdmin('SetTitleData', { Key: broadcastKey, Value: JSON.stringify(broadcasts) }, env);
+            await pfAdmin('SetTitleData', { Key: broadcastKey, Value: JSON.stringify(broadcasts) }, env);
+            await pfAdmin('SetTitleData', { Key: 'BroadcastMailLastUpdated', Value: item.sentAt }, env);
             await appendSentLog(env, { type: 'broadcast', to: 'ALL PLAYERS', subject: item.subject, sentAt: item.sentAt });
             return result;
         }
